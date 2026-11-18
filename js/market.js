@@ -22,7 +22,7 @@ export async function loadMarket() {
 const PROFILE_KEY = 'ex-order-profile';
 const profile = {
   get() { try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}'); } catch { return {}; } },
-  set(v) { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(v)); } catch {} },
+  set(v) { try { if (localStorage.getItem(PROFILE_KEY) === JSON.stringify(v)) return; localStorage.setItem(PROFILE_KEY, JSON.stringify(v)); localStorage.setItem('ex-order-ts', JSON.stringify(Date.now())); } catch {} dispatchEvent(new CustomEvent('exhibit:changed', { detail: 'order' })); },
 };
 
 const money = (n, cur) => {
@@ -42,7 +42,12 @@ const favs = () => { try { return new Set(JSON.parse(localStorage.getItem(FAV_KE
 export const isFav = id => favs().has(id);
 export function toggleFav(id) {
   const f = favs(); f.has(id) ? f.delete(id) : f.add(id);
-  try { localStorage.setItem(FAV_KEY, JSON.stringify([...f])); } catch {}
+  try {
+    localStorage.setItem(FAV_KEY, JSON.stringify([...f]));
+    const ts = JSON.parse(localStorage.getItem('ex-favs-ts') || '{}'); ts[id] = { on: f.has(id), t: Date.now() };
+    localStorage.setItem('ex-favs-ts', JSON.stringify(ts));
+  } catch {}
+  dispatchEvent(new CustomEvent('exhibit:changed', { detail: 'favs' }));
   document.querySelectorAll(`[data-fav="${CSS.escape(id)}"]`).forEach(el => el.setAttribute('aria-pressed', f.has(id)));
   return f.has(id);
 }

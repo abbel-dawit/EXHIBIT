@@ -16,7 +16,15 @@ export function privacyHTML() {
   <p>EXHIBIT is run by ${LEGAL_OWNER}. This policy explains what happens to your information when you use the EXHIBIT app and website.</p>
 
   <h3>The short version</h3>
-  <p>EXHIBIT has no user accounts and no server-side database. Your collection stays on your device. We don't sell your data, show ads or track you across other sites.</p>
+  <p>EXHIBIT accounts have no password, email or server-side database. Your account lives on your own devices and syncs between them encrypted. We can't read it. We don't sell your data, show ads or track you across other sites.</p>
+
+  <h3>Your account</h3>
+  <ul>
+    <li><b>What it holds:</b> your name, an optional photo, the unlock codes of posters you collect, your likes, and the name and delivery area you enter when ordering.</li>
+    <li><b>Where it lives:</b> on each device you sign in on. It's tied together by a random secret key made on your first device. Signing in on another device works by scanning a QR code, opening a link or typing a short code (valid 15 minutes) that carries this key. Only share them with devices you own.</li>
+    <li><b>How it syncs:</b> your account is compressed and <b>encrypted on your device</b> (AES-256) before it leaves, then passed between your devices through the free public relay <b>ntfy.sh</b>. ntfy.sh only receives unreadable data under a random topic name, along with technical data such as your IP address and the device type you're syncing from. Copies on the relay expire after about 3 hours.</li>
+    <li><b>Deleting:</b> "Sign out of this device" removes the account from that device. "Delete my account from all devices" signs out and wipes every device that's signed in.</li>
+  </ul>
 
   <h3>What stays on your device</h3>
   <ul>
@@ -43,7 +51,7 @@ export function privacyHTML() {
   <p>EXHIBIT isn't directed at children under 13 and doesn't knowingly collect information from them.</p>
 
   <h3>Your choices</h3>
-  <p>You can delete everything EXHIBIT has stored by clearing this site's data in your browser settings. Back up first if you want to keep your posters.</p>
+  <p>You can delete your account from all devices in the account page (tap your picture), or remove everything from one device by clearing this site's data in your browser settings. Back up first if you want to keep your posters.</p>
 
   <h3>Changes and contact</h3>
   <p>If this policy changes, the updated version will appear here with a new date. Questions? Please ${contactLine()}.</p>
@@ -73,19 +81,22 @@ export function termsHTML() {
   <h3>4. Marketplace</h3>
   <p>The Marketplace shows posters offered by independent artists. Orders are arranged directly between you and the artist over WhatsApp or Telegram. Prices, availability, payment, delivery, returns and refunds are agreed with the artist. ${LEGAL_OWNER} isn't a party to those sales and isn't responsible for them, but please report any artist who behaves dishonestly.</p>
 
-  <h3>5. Acceptable use</h3>
+  <h3>5. Your account</h3>
+  <p>You need a free EXHIBIT account to use the app. You're responsible for the devices you sign in on and for keeping your sign-in QR code, link and codes private. Anyone who has them can open your account. Your account isn't stored on a server, so keep at least one device signed in, or keep a backup, so you don't lose your collection.</p>
+
+  <h3>6. Acceptable use</h3>
   <p>Don't try to break the app's encryption, extract artwork files, get around unlock or preview limits, or use the app for anything unlawful.</p>
 
-  <h3>6. Certificates and NFTs</h3>
+  <h3>7. Certificates and NFTs</h3>
   <p>Certificates of authenticity and linked tokens record provenance. They don't promise any future value. Blockchains and marketplaces are run by third parties.</p>
 
-  <h3>7. No warranty</h3>
+  <h3>8. No warranty</h3>
   <p>EXHIBIT is provided "as is". We work to keep it reliable, but we can't promise it will always be available or error-free, or that it works on every device. Keep backups of your collection.</p>
 
-  <h3>8. Limitation of liability</h3>
+  <h3>9. Limitation of liability</h3>
   <p>To the extent the law allows, ${LEGAL_OWNER} isn't liable for indirect or consequential losses, or for loss of data stored on your device, arising from your use of the app.</p>
 
-  <h3>9. Changes</h3>
+  <h3>10. Changes</h3>
   <p>These terms may be updated from time to time. The current version will always be shown here. Questions? Please ${contactLine()}.</p>
 </article>`;
 }

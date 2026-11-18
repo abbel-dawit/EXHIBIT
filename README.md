@@ -172,7 +172,19 @@ Edit `marketplace.json` to add artists and listings, then commit and push:
 
 Every artist in `marketplace.json` gets an **artist gallery**: round avatars on Home and in the Marketplace, plus a **Meet the Artists** page (`#artists`). An artist page shows their bio, how many of their works you've liked, prices, and all their works. **Walk the gallery** opens a 3D room with the artist's name on the wall and only their works on the walls. In the room, tap a work for its label, tap the heart to like it, and tap **Details** for the Art Story page where it can be ordered. Likes are shared with the hearts in the Marketplace and saved on the device. Add `"bio"` and optionally `"avatar"` (an image path) to each artist in `marketplace.json`.
 
-## 13 · Legal
+## 13 · Accounts and sync (same model as BAZINGA!)
+
+Everyone needs an account. After **Launch App**, the welcome screen offers **Create account** (a name, an optional photo, and accepting the Terms) or **Sign in with QR code**.
+
+- **No password and no server.** An account is the profile plus a random secret *sync key* made on the first device. It lives only on the user's devices.
+- **Signing in a new device:** on a signed-in device, tap your picture (top right) → **Show sign-in QR code**. The new device scans it (in the app or with the phone camera, which opens `…/#join=<key>`), or types the 8-character code from **Get a code**, which works once for 15 minutes.
+- **What syncs:** profile (name, photo), every collected poster's unlock code (other devices download and decrypt the poster themselves), likes, and order details. A device list shows each signed-in device, and you can remove any of them.
+- **How:** everything is compressed and encrypted with AES-256-GCM on the device, then passed through the free public relay **ntfy.sh** under a topic named by a one-way hash of the key. The relay only sees unreadable bytes. Copies there expire after about 3 hours; open devices re-post well before that, and sync live within seconds while open.
+- **Sign out of this device** removes the account and its posters from that device. **Delete my account from all devices** wipes every signed-in device.
+- Want your own relay? Run an ntfy server and set `window.EXHIBIT_CONFIG = { syncRelay: 'https://your-ntfy' }` before `js/app.js` loads.
+- Code: `js/account.js` (sync engine) and `js/account-ui.js` (welcome screen and account page).
+
+## 14 · Legal
 
 The footer carries the copyright notice (© 2026 Abbel Dawit) and links to the **Privacy Policy** and **Terms of Use**, which open inside the app (also at `#privacy` and `#terms`). Their text is in `js/legal.js`. It's a plain-language starting point written to match how the app works. Set `LEGAL_CONTACT` there, and have a lawyer review both texts for your country before you sell.
 

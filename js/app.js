@@ -10,6 +10,9 @@ import { mountContact } from './contact.js';
 import { privacyHTML, termsHTML } from './legal.js';
 import { loadMarket, renderMarket, openOrder, renderTrending, toggleFav, heartHTML, isFav, artistList, renderArtistStrip, renderArtists, openArtist } from './market.js';
 import { storyHTML, mountStory } from './story.js';
+import * as acct from './account.js';
+import { initAccountUI, ensureAccount, openAccount, avatarHTML } from './account-ui.js';
+import { qrToCanvas } from './qr.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -455,6 +458,7 @@ function openUnlock(tab = 'scan') {
             let handled = false;
             scanner = await startScanner(v, text => {
               if (handled) return;
+              if (acct.secretFrom(text) || acct.codeFrom(text)) { handled = true; stopScan(); closeSheet(); setTimeout(() => handleAccountLink(text), 260); return; }
               if (/[#&?]n=/.test(text)) { handled = true; stopScan(); closeSheet(); setTimeout(() => runPreview(text), 260); return; }
               const p = parsePayload(text);
               if (!p) { const m = $('#scanmsg', tb); if (m) m.textContent = 'That QR isn\'t an EXHIBIT code'; return; }
@@ -534,7 +538,7 @@ function openUnlock(tab = 'scan') {
           $('#rerr', tb).textContent = ''; $('#rprog', tb).hidden = false;
           try {
             const r = await restoreBackup(json, pw, p => { $('#rprog i', tb).style.width = Math.round(p * 100) + '%'; });
-            await renderCollection();
+            await renderCollection(); acct.changed();
             closeSheet();
             toast(`Restored ${r.restored} poster${r.restored === 1 ? '' : 's'}${r.already ? ` · ${r.already} already here` : ''}${r.failed.length ? ` · ${r.failed.length} couldn't be restored` : ''}`, 4200);
             if (r.restored) setView('mine');
@@ -583,6 +587,7 @@ async function runUnlock(input) {
     const { entry, already } = await unlock(input, (label, p) => { ring.style.setProperty('--p', Math.round(p)); step.textContent = label; });
     ring.style.setProperty('--p', 100);
     requestPersistence();
+    if (!already) acct.changed();
     const art = await openArtwork(entry);
     await thumbURL(entry);
     await sleep(350);
@@ -981,6 +986,7 @@ document.addEventListener('click', e => {
   if (act === 'mine') setView('mine');
   if (act === 'market') setView('market');
   if (act === 'artists') setView('artists');
+  if (act === 'account') openAccount();
   if (act === 'gallery3d') open3D();
   if (act === 'privacy' || act === 'terms') openLegal(act);
   if (act === 'unlock') openUnlock();
@@ -1000,6 +1006,25 @@ document.addEventListener('keydown', e => {
   sheet.addEventListener('touchmove', e => { if (y0 === null) return; const dy = e.touches[0].clientY - y0; if (dy > 0) sheet.style.transform = `translateY(${dy}px)`; }, { passive: true });
   sheet.addEventListener('touchend', e => { if (y0 === null) return; const dy = e.changedTouches[0].clientY - y0; y0 = null; sheet.style.transform = ''; if (dy > 110) closeSheet(); });
 })();
+function takeJoinFromURL() {
+  const h = location.hash;
+  if (!/[#&](join|code)=/.test(h)) return null;
+  history.replaceState(history.state, '', location.pathname + location.search);   // never keep the sign-in key in history
+  return h;
+}
+/** A sign-in QR / link for an account, while the app is running. */
+async function handleAccountLink(text) {
+  const secret = acct.secretFrom(text), code = acct.codeFrom(text);
+  if (!secret && !code) return;
+  if (acct.signedIn()) {
+    if (secret && secret === JSON.parse(localStorage.getItem('ex-sync') || '{}').secret) return toast('This device is already signed in to that account.');
+    if (!confirm(`Switch accounts? This device will be signed out of ${acct.profile()?.name || 'your account'} (it stays on your other devices) and signed in to the scanned one.`)) return;
+    await acct.syncNow({ force: true }).catch(() => {});
+    await acct.leave({ wipe: true });
+  }
+  await ensureAccount({ joinSecret: secret, joinCode: code });
+  location.reload();
+}
 function takeNfcFromURL() {
   const h = location.hash;
   if (!/[#&]n=/.test(h)) return null;
@@ -1013,6 +1038,7 @@ function takeUnlockFromURL() {
   return h;
 }
 addEventListener('hashchange', () => {
+  const j = takeJoinFromURL(); if (j) return handleAccountLink(j);
   const n = takeNfcFromURL(); if (n) return runPreview(n);
   const u = takeUnlockFromURL();
   if (u) runUnlock(u);
@@ -1023,8 +1049,14 @@ addEventListener('hashchange', () => {
 });
 
 // ================================================================ boot
-let pendingUnlock = null, pendingNfc = null;
+function paintAvatar() {
+  const b = $('#account-btn'); if (!b) return;
+  const p = acct.profile();
+  b.innerHTML = avatarHTML(p); b.setAttribute('aria-label', p ? `Your account: ${p.name}` : 'Account');
+}
+let pendingUnlock = null, pendingNfc = null, pendingJoin = null;
 (async function boot() {
+  pendingJoin = takeJoinFromURL();
   pendingNfc = takeNfcFromURL();
   pendingUnlock = takeUnlockFromURL();
   const legalHash = ['#privacy', '#terms'].includes(location.hash) ? location.hash.slice(1) : null;
@@ -1033,7 +1065,16 @@ let pendingUnlock = null, pendingNfc = null;
   mountThemeButton($('.nav-actions'));
   initServiceWorker();
   fetch('version.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(v => { if (v?.version) $('#foot-version').textContent = `v${v.version}`; }).catch(() => {});
-  await runSplash({ landing: !pendingUnlock && !pendingNfc });
+  await runSplash({ landing: !pendingUnlock && !pendingNfc && !pendingJoin });
+  // accounts: everyone signs up, or signs in by scanning a QR code from another device
+  initAccountUI({ toast, esc, svgIcon, openSheet, closeSheet, qrToCanvas, loadScanner, openLegal, openBackup: () => openBackup(),
+    stats: () => ({ posters: state.collection.length, liked: (JSON.parse(localStorage.getItem('ex-favs') || '[]')).length }) });
+  acct.on('profile', paintAvatar);
+  acct.on('collection', async ({ added }) => { await renderCollection(); toast(`✦ ${added} poster${added === 1 ? '' : 's'} synced from your account`); });
+  acct.on('signedout', ({ reason }) => { if (reason === 'removed' || reason === 'deleted') { toast(reason === 'removed' ? 'This device was removed from your account on another device.' : 'Your account was deleted on another device.', 4000); setTimeout(() => location.reload(), 2500); } });
+  if (pendingJoin && acct.signedIn()) { await ensureAccount(); handleAccountLink(pendingJoin); }
+  else await ensureAccount({ joinSecret: pendingJoin ? acct.secretFrom(pendingJoin) : null, joinCode: pendingJoin ? acct.codeFrom(pendingJoin) : null });
+  paintAvatar();
   const contact = mountContact({ toast });
   document.getElementById('tabbar')?.appendChild(document.getElementById('contact'));
   contact.show();
