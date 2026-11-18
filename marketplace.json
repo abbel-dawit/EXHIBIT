@@ -1,0 +1,154 @@
+{
+ "currency": "ETB",
+ "note": "Pick a poster and order it straight from the artist on WhatsApp or Telegram.",
+ "artists": {
+  "golden-hour-artist": {
+   "name": "Mieraf Girum",
+   "city": "Addis Ababa",
+   "whatsapp": "",
+   "telegram": "",
+   "bio": "Addis Ababa painter of warm, light-filled portraits. Her Golden Hour series turns the last minutes of sunset into living art that moves when you look at it."
+  },
+  "mignon": {
+   "name": "Abraham Mignon (demo)",
+   "city": "Public domain",
+   "whatsapp": "",
+   "telegram": "",
+   "bio": "Demo listing. Dutch Golden Age still-life painter known for lush flower pieces full of hidden insects and dewdrops."
+  },
+  "audubon": {
+   "name": "John James Audubon (demo)",
+   "city": "Public domain",
+   "whatsapp": "",
+   "telegram": "",
+   "bio": "Demo listing. Naturalist painter whose life-size bird plates combine scientific detail with movement."
+  },
+  "studio-color": {
+   "name": "Color Study Studio (demo)",
+   "city": "Public domain",
+   "whatsapp": "",
+   "telegram": "",
+   "bio": "Demo listing. Loose, bright watercolour studies of shape and colour."
+  },
+  "studio-land": {
+   "name": "Landscape Archive (demo)",
+   "city": "Public domain",
+   "whatsapp": "",
+   "telegram": "",
+   "bio": "Demo listing. Classic watercolour landscapes of cliffs, paths and open skies."
+  }
+ },
+ "listings": [
+  {
+   "id": "golden-hour",
+   "artwork": "golden-hour",
+   "title": "Golden Hour",
+   "artist": "golden-hour-artist",
+   "image": "brand/hero.jpg",
+   "description": "A woman in the last warm light of the day, wrapped in drifting cloth beneath twin suns. Archival print on heavy matte paper.",
+   "edition": "Limited edition of 10",
+   "living": true,
+   "sizes": [
+    {
+     "label": "A3 · 29.7 × 42 cm",
+     "price": 2500
+    },
+    {
+     "label": "A2 · 42 × 59.4 cm",
+     "price": 3800
+    },
+    {
+     "label": "A1 · 59.4 × 84.1 cm",
+     "price": 5900
+    }
+   ],
+   "category": "Portraits",
+   "year": "2026",
+   "medium": "Archival matte print"
+  },
+  {
+   "id": "flowers-in-a-vase",
+   "title": "Flowers in a Vase",
+   "artist": "mignon",
+   "image": "market/flowers.jpg",
+   "category": "Still life",
+   "year": "c. 1660",
+   "medium": "Fine art print",
+   "description": "A dark, glowing still life: striped tulips, roses, poppies and an iris spill from a bronze vase, with butterflies, snails and a dragonfly hidden among the stems.",
+   "edition": "Open edition",
+   "sizes": [
+    {
+     "label": "A3 · 29.7 × 42 cm",
+     "price": 1600
+    },
+    {
+     "label": "A2 · 42 × 59.4 cm",
+     "price": 2400
+    }
+   ]
+  },
+  {
+   "id": "color-study",
+   "title": "Color Study",
+   "artist": "studio-color",
+   "image": "market/color-study.jpg",
+   "category": "Abstract",
+   "year": "20th century",
+   "medium": "Giclée print",
+   "description": "Loose watercolour shapes in deep blue, plum, green, pink and orange, overlapping like a quiet landscape.",
+   "edition": "Open edition",
+   "sizes": [
+    {
+     "label": "A4 · 21 × 29.7 cm",
+     "price": 900
+    },
+    {
+     "label": "A3 · 29.7 × 42 cm",
+     "price": 1500
+    }
+   ]
+  },
+  {
+   "id": "mountain-pass",
+   "title": "Mountain Pass",
+   "artist": "studio-land",
+   "image": "market/mountain-pass.jpg",
+   "category": "Landscapes",
+   "year": "18th century",
+   "medium": "Fine art print",
+   "description": "Pale cliffs rise above an autumn path winding through russet trees, under a soft summer sky.",
+   "edition": "Open edition",
+   "sizes": [
+    {
+     "label": "A3 · 42 × 29.7 cm",
+     "price": 1500
+    },
+    {
+     "label": "A2 · 59.4 × 42 cm",
+     "price": 2300
+    }
+   ]
+  },
+  {
+   "id": "thrushes",
+   "title": "Thrushes on Mistletoe",
+   "artist": "audubon",
+   "image": "market/thrushes.jpg",
+   "category": "Nature",
+   "year": "19th century",
+   "medium": "Archival print",
+   "description": "Three thrushes in rust, slate and brown perch and tumble through a sprig of mistletoe, painted with naturalist detail.",
+   "edition": "Open edition",
+   "sizes": [
+    {
+     "label": "A3 · 29.7 × 42 cm",
+     "price": 1500
+    },
+    {
+     "label": "A2 · 42 × 59.4 cm",
+     "price": 2300
+    }
+   ]
+  }
+ ]
+}

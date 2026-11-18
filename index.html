@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>(function(){try{var p=localStorage.getItem('gh-theme')||'light';var t=p==='auto'?(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):p;document.documentElement.dataset.theme=t;document.write('<meta name="theme-color" content="'+(t==='light'?'#f1ede4':'#14120f')+'">');}catch(e){document.documentElement.dataset.theme='dark';}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EXHIBIT">
+<meta name="description" content="EXHIBIT: a private gallery of living art. Unlock the animated edition of your poster with its QR code.">
+<title>EXHIBIT</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-48.png" sizes="48x48" type="image/png">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="shortcut icon" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="preload" as="image" href="brand/hero.jpg">
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three/three.module.js",
+  "three/addons/": "./vendor/three/addons/",
+  "mindar-image-three": "./vendor/mind-ar/mindar-image-three.prod.js"
+} }
+</script>
+</head>
+<body>
+
+<!-- ============ SPLASH ============ -->
+<div id="splash" aria-live="polite">
+  <canvas id="splash-embers" aria-hidden="true" hidden></canvas>
+  <div class="sp-head">
+    <h1 class="splash-title" id="splash-title"><span class="sp-clip" style="background-image:url(brand/sky.jpg)">EXHIBIT</span></h1>
+    <div class="sp-sub"><span>Living Art World</span><i class="sp-line"></i></div>
+  </div>
+  <div class="sp-collage" aria-hidden="true">
+    <div class="sp-card sp-peek l" style="background-image:url(market/mountain-pass.jpg)"></div>
+    <div class="sp-card sp-main" style="background-image:url(brand/hero.jpg)"></div>
+    <div class="sp-card sp-second" style="background-image:url(market/flowers.jpg)"></div>
+    <div class="sp-card sp-peek r" style="background-image:url(market/color-study.jpg)"></div>
+    <i class="sp-arrow a1"></i><i class="sp-arrow a2"></i>
+  </div>
+  <div class="splash-foot">
+    <div class="fact" id="fact" aria-live="polite">
+      <div class="fact-label"><span class="fact-spark">✦</span> Did you know?</div>
+      <p class="fact-text" id="fact-text"></p>
+    </div>
+    <div class="sp-dots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+    <div class="splash-progress"><i id="splash-bar"></i><div class="splash-status"><span id="splash-status">Opening the gallery…</span><span id="splash-pct">0%</span></div></div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" hidden>
+  <header class="nav">
+    <a class="brand" href="#" data-action="home" aria-label="EXHIBIT home"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 13v3h3"/></svg></span><span class="brand-name">EXHIBIT</span></a>
+    <nav class="nav-actions">
+      <button class="nav-btn gold" data-action="unlock" aria-label="Unlock a poster">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 13v3h3"/></svg>
+        <span class="lbl">Unlock</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- HOME -->
+  <main id="view-home" class="view">
+    <section class="home-top">
+      <div class="eyebrow" id="hero-eyebrow">Private collection</div>
+      <h1 class="display">Your Living<br>Art Gallery</h1>
+      <div class="chips-scroll" id="trend-chips" role="group" aria-label="Filter"></div>
+    </section>
+
+    <section class="section trend" hidden>
+      <div class="section-head row"><h2 class="h-sm">Trending Art</h2><button class="link-btn" data-action="market">See All</button></div>
+      <div class="grid masonry" id="trend-grid"></div>
+      <button class="pill-cta" data-action="market">Buy Now <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h17M15 6l6 6-6 6"/></svg></button>
+    </section>
+
+    <section class="section artists-sec" hidden>
+      <div class="section-head row"><h2 class="h-sm">Artists</h2><button class="link-btn" data-action="artists">See All</button></div>
+      <div class="artist-strip" id="home-artists"></div>
+    </section>
+
+    <section class="section featured">
+      <div class="section-head row"><h2 class="h-sm">Featured</h2><button class="link-btn" data-action="unlock">Unlock</button></div>
+      <div class="hero-stage">
+        <div class="hero-frame" id="hero-frame">
+          <img id="hero-img" src="brand/hero.jpg" alt="">
+          <canvas id="hero-embers" aria-hidden="true"></canvas>
+          <div class="hero-lock" id="hero-lock"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Living edition locked</span></div>
+          <div class="hero-caption" id="hero-caption"><span>Golden Hour</span><span class="muted">Unlock with your poster's QR</span></div>
+        </div>
+      </div>
+      <p class="hero-lede">Every EXHIBIT poster comes with its own private QR code. Scan it to unlock the living edition: animated, signed by the artist, and yours to keep on your phone.</p>
+      <div class="hero-ctas">
+        <button class="btn btn-gold btn-lg" data-action="unlock">Unlock your poster</button>
+        <button class="btn btn-ghost btn-lg" data-action="mine">My Posters <span class="count-inline" id="hero-count"></span></button>
+      </div>
+    </section>
+
+    <section class="section" id="home-mine" hidden>
+      <div class="section-head row"><h2 class="h-sm">Your collection</h2><button class="link-btn" data-action="mine">See All</button></div>
+      <div class="strip" id="home-strip"></div>
+    </section>
+
+    <section class="section" id="home-locked" hidden>
+      <div class="section-head row"><h2 class="h-sm">Still to discover</h2><p class="section-note" id="locked-note"></p></div>
+      <div class="grid" id="locked-grid"></div>
+    </section>
+
+    <!-- Immersive how-to -->
+    <section class="journey" id="journey" aria-label="How it works">
+      <div class="section-head center">
+        <div class="eyebrow">Ready to scan</div>
+        <h2>Four steps to living art</h2>
+      </div>
+      <ol class="journey-list">
+        <li class="jstep" style="--i:0">
+          <div class="jvis jv-qr" aria-hidden="true"><div class="phone"><div class="screen"><div class="qr"></div><span class="scanline"></span><span class="tick">✓</span></div></div></div>
+          <div class="jtext"><span class="jnum">01</span><h3>Scan your private QR</h3><p>Find the QR code that came with your poster. Scan it with your phone camera or tap <b>Unlock</b> here. Each code is unique to your copy.</p></div>
+        </li>
+        <li class="jstep" style="--i:1">
+          <div class="jvis jv-frame" aria-hidden="true"><div class="phone"><div class="screen"><div class="mini-poster"></div><i></i><i></i><i></i><i></i></div></div></div>
+          <div class="jtext"><span class="jnum">02</span><h3>Point at the poster</h3><p>Open it from <b>My Posters</b>, tap <b>Start AR</b> and fit the whole poster in the frame. Stand back a little at first.</p></div>
+        </li>
+        <li class="jstep" style="--i:2">
+          <div class="jvis jv-alive" aria-hidden="true"><div class="mini-poster big"><span class="glow"></span><span class="e"></span><span class="e"></span><span class="e"></span><span class="e"></span><span class="e"></span><span class="e"></span></div></div>
+          <div class="jtext"><span class="jnum">03</span><h3>Watch it come alive</h3><p>The light moves, the sky drifts, embers rise. Move your phone and the artwork moves with you, always fully on screen.</p></div>
+        </li>
+        <li class="jstep" style="--i:3">
+          <div class="jvis jv-keep" aria-hidden="true"><div class="cert"><div class="seal">✦</div><span></span><span></span><span class="short"></span></div></div>
+          <div class="jtext"><span class="jnum">04</span><h3>Keep it forever</h3><p>Your edition is signed by the artist and saved on your phone, so it works offline. Back it up anywhere with one tap.</p></div>
+        </li>
+      </ol>
+    </section>
+  </main>
+
+  <!-- MY POSTERS -->
+  <main id="view-mine" class="view" hidden>
+    <section class="mine-head">
+      <div>
+        <div class="eyebrow">Your collection</div>
+        <h1 class="mine-title display">My Posters</h1>
+        <p class="mine-sub" id="mine-sub"></p>
+      </div>
+      <div class="mine-actions">
+        <button class="btn btn-ghost" data-action="gallery3d"><svg viewBox="0 0 24 24"><path d="M12 3 3 7.5v9L12 21l9-4.5v-9z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>3D Gallery</button>
+        <button class="btn btn-ghost" data-action="backup"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Back up</button>
+        <button class="btn btn-gold" data-action="unlock"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Unlock</button>
+      </div>
+    </section>
+    <div class="banner" id="backup-banner" hidden>
+      <span>✦</span><p><b>Save a backup of your collection.</b> If you change phones or clear your browser, a backup brings every poster back.</p>
+      <button class="btn btn-small btn-gold" data-action="backup">Back up now</button>
+    </div>
+    <div class="banner" id="install-banner" hidden>
+      <span>⌂</span><p id="install-text"><b>Add EXHIBIT to your home screen</b> for one-tap access and offline viewing.</p>
+      <button class="btn btn-small btn-ghost" id="install-btn" hidden>Install</button>
+    </div>
+    <div class="grid grid-mine masonry" id="mine-grid"></div>
+  </main>
+
+  <!-- MARKETPLACE -->
+  <main id="view-market" class="view" hidden>
+    <section class="mine-head">
+      <div>
+        <div class="eyebrow">Marketplace</div>
+        <h1 class="mine-title display">Your Art<br>Marketplace</h1>
+        <p class="mine-sub" id="market-note">Pick a poster and order it straight from the artist on WhatsApp or Telegram.</p>
+      </div>
+    </section>
+    <section class="artists-sec market-artists" hidden>
+      <div class="section-head row"><h2 class="h-sm">Artists</h2><button class="link-btn" data-action="artists">See All</button></div>
+      <div class="artist-strip" id="market-artists"></div>
+    </section>
+    <div class="chips-scroll" id="market-chips" role="group" aria-label="Filter"></div>
+    <div class="grid grid-market masonry" id="market-grid"><div class="empty">Loading posters…</div></div>
+  </main>
+
+  <!-- ARTISTS -->
+  <main id="view-artists" class="view" hidden>
+    <section class="mine-head">
+      <div>
+        <div class="eyebrow">Artist galleries</div>
+        <h1 class="mine-title display">Meet the<br>Artists</h1>
+        <p class="mine-sub">Open an artist to see their work, like the pieces you love, or walk through all of it in their own 3D gallery.</p>
+      </div>
+    </section>
+    <div class="artists-grid" id="artists-grid"><div class="empty">Loading artists…</div></div>
+  </main>
+
+  <footer class="foot">
+    <div class="foot-legal">
+      <span class="foot-copy">© 2026 Abbel Dawit. All rights reserved.</span>
+      <span class="foot-note">EXHIBIT and all artworks, images and animations shown here are protected by copyright. Copying, recording, reproduction or distribution without written permission is prohibited.</span>
+    </div>
+    <nav class="foot-links" aria-label="Legal">
+      <a href="#privacy" data-action="privacy">Privacy Policy</a>
+      <a href="#terms" data-action="terms">Terms of Use</a>
+      <span class="muted" id="foot-version"></span>
+    </nav>
+  </footer>
+</div>
+
+<!-- ============ BOTTOM TAB BAR ============ -->
+<nav class="tabbar" id="tabbar" aria-label="Main">
+  <button class="tab-btn active" data-action="home" aria-label="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg></button>
+  <button class="tab-btn" data-action="market" aria-label="Marketplace"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 9"/></svg></button>
+  <button class="tab-btn" data-action="gallery3d" aria-label="3D Gallery"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5v9L12 21l9-4.5v-9z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg></button>
+  <button class="tab-btn tab-collection" data-action="mine" aria-label="Your collection"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span class="count" id="mine-count" hidden>0</span></button>
+</nav>
+
+<!-- ============ SHEET ============ -->
+<div class="sheet-wrap" id="sheet" hidden>
+  <div class="sheet-scrim" data-action="close-sheet"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet-grab" aria-hidden="true"></div>
+    <button class="icon-btn sheet-close" data-action="close-sheet" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="sheet-body" id="sheet-body"></div>
+  </div>
+</div>
+
+<!-- ============ UNLOCK CEREMONY ============ -->
+<div id="ceremony" hidden>
+  <canvas id="ceremony-embers" aria-hidden="true"></canvas>
+  <div class="cer-inner" id="cer-inner"></div>
+</div>
+
+<!-- ============ AR VIEW ============ -->
+<div id="ar-view" hidden>
+  <div id="ar-mount"></div>
+  <div class="ar-top">
+    <button class="icon-btn icon-btn-glass" data-action="close-ar" aria-label="Close camera"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="ar-title" id="ar-title"></div>
+    <button class="icon-btn icon-btn-glass" data-action="ar-mode" id="ar-mode" aria-label="Switch display mode" title="Fit to screen / pin to poster"><svg viewBox="0 0 24 24"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"/></svg></button>
+    <button class="icon-btn icon-btn-glass" data-action="ar-help" aria-label="Tips"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7M12 17h.01"/></svg></button>
+  </div>
+  <div class="ar-scan" id="ar-scan">
+    <div class="ar-frame" id="ar-frame"><img id="ar-ghost" alt=""><i></i><i></i><i></i><i></i><span class="ar-sweep"></span></div>
+    <div class="ar-msg" id="ar-msg">Fit the whole poster in the frame</div>
+  </div>
+  <div class="ar-caption" id="ar-caption"></div>
+  <div class="ar-status" id="ar-status"></div>
+  <div class="ar-help" id="ar-help" hidden>
+    <h3>Tips for a perfect lock</h3>
+    <ul>
+      <li>Stand back until the whole poster fits on screen.</li>
+      <li>Avoid glare: tilt slightly if lights reflect off the print.</li>
+      <li>Even light helps. Very dark rooms make it harder.</li>
+      <li><b>Fit</b> mode keeps the artwork fully on screen. <b>Pin</b> mode locks it onto the print. Switch with the frame button.</li>
+    </ul>
+    <button class="btn btn-gold" data-action="ar-help">Got it</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

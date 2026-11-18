@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>(function(){try{var p=localStorage.getItem('gh-theme')||'light';var t=p==='auto'?(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):p;document.documentElement.dataset.theme=t;document.write('<meta name="theme-color" content="'+(t==='light'?'#f1ede4':'#14120f')+'">');}catch(e){document.documentElement.dataset.theme='dark';}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="robots" content="noindex, nofollow">
+<title>EXHIBIT · Artist Studio</title>
+<link rel="icon" href="../icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../icons/favicon-48.png" sizes="48x48" type="image/png">
+<link rel="icon" href="../icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="shortcut icon" href="../icons/favicon-32.png">
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/app.css">
+<link rel="stylesheet" href="studio.css">
+<script type="importmap">
+{ "imports": {
+  "three": "../vendor/three/three.module.js",
+  "three/addons/": "../vendor/three/addons/"
+} }
+</script>
+</head>
+<body class="studio">
+<header class="nav">
+  <a class="brand" href="../" aria-label="Open the gallery"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 13v3h3"/></svg></span><span class="brand-name">EXHIBIT <span class="studio-tag">Studio</span></span></a>
+  <nav class="nav-actions" id="nav-actions" hidden style="display:flex">
+    <button class="nav-btn" data-act="settings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="lbl">Settings</span></button>
+    <button class="nav-btn" data-act="lock" aria-label="Lock studio"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span class="lbl">Lock</span></button>
+  </nav>
+</header>
+
+<main class="studio-main">
+  <!-- LOCKED: open or create a vault -->
+  <section id="screen-lock" class="lock-screen" hidden>
+    <div class="lock-card">
+      <div class="eyebrow">Artist Studio</div>
+      <h1>Your private vault</h1>
+      <p class="muted">Your vault holds your artist signing key, every artwork's encryption key and all unlock codes. It is encrypted with your password and never leaves your device unless you download it.</p>
+      <div id="lock-remembered" hidden>
+        <div class="field"><label for="pw-open">Vault password</label><input type="password" id="pw-open" autocomplete="current-password"></div>
+        <button class="btn btn-gold btn-lg btn-block" data-act="open-remembered">Unlock vault</button>
+        <div class="divider"></div>
+      </div>
+      <label class="btn btn-ghost btn-block filebtn">Open a vault file (.ghvault)<input type="file" id="vault-file" accept=".ghvault,application/json,.json"></label>
+      <div class="field" id="vf-pw" hidden><label for="pw-file">Password for this vault</label><input type="password" id="pw-file"><button class="btn btn-gold btn-block" data-act="open-file" style="margin-top:10px">Open</button></div>
+      <div class="divider"></div>
+      <details class="create">
+        <summary>Create a new artist identity</summary>
+        <div class="stack" style="margin-top:12px">
+          <div class="field"><label for="new-name">Artist name (shown on certificates)</label><input type="text" id="new-name" autocomplete="name"></div>
+          <div class="field"><label for="new-pw">Vault password</label><input type="password" id="new-pw" autocomplete="new-password"></div>
+          <div class="field"><label for="new-pw2">Repeat password</label><input type="password" id="new-pw2" autocomplete="new-password"></div>
+          <button class="btn btn-gold btn-block" data-act="create">Create vault</button>
+          <p class="help">Choose a strong password and store it safely. It cannot be recovered.</p>
+        </div>
+      </details>
+      <p class="err" id="lock-err"></p>
+    </div>
+  </section>
+
+  <!-- OPEN: artworks -->
+  <section id="screen-main" hidden>
+    <div class="studio-head">
+      <div>
+        <div class="eyebrow" id="artist-line"></div>
+        <h1>Artworks</h1>
+        <p class="muted" id="key-line"></p>
+      </div>
+      <div class="mine-actions">
+        <button class="btn btn-ghost" data-act="download-vault">Download vault backup</button>
+        <button class="btn btn-gold" data-act="add">+ Add artwork</button>
+      </div>
+    </div>
+    <div class="banner" id="pending-bar" hidden>
+      <span>●</span><p id="pending-text"></p>
+      <button class="btn btn-small btn-ghost" data-act="zip">Download ZIP</button>
+      <button class="btn btn-small btn-gold" data-act="publish">Publish to GitHub</button>
+    </div>
+    <div class="grid" id="art-grid"></div>
+  </section>
+</main>
+<footer class="foot" style="padding-bottom:calc(22px + var(--safe-b))">
+  <div class="foot-legal"><span class="foot-copy">© 2026 Abbel Dawit. All rights reserved.</span></div>
+  <nav class="foot-links" aria-label="Legal"><a href="../#privacy">Privacy Policy</a><a href="../#terms">Terms of Use</a></nav>
+</footer>
+
+<div class="sheet-wrap" id="sheet" hidden>
+  <div class="sheet-scrim" data-act="close"></div>
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-grab" aria-hidden="true"></div>
+    <button class="icon-btn sheet-close" data-act="close" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="sheet-body" id="sheet-body"></div>
+  </div>
+</div>
+
+<div id="print-area" aria-hidden="true"></div>
+<div class="toast" id="toast" role="status"></div>
+<script type="module" src="studio.js"></script>
+</body>
+</html>

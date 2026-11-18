@@ -1,0 +1,50 @@
+.studio-tag { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #2a1712; background: var(--gold-2); padding: 3px 7px; border-radius: 6px; vertical-align: 4px; margin-left: 6px; }
+.studio-main { max-width: var(--maxw); margin: 0 auto; padding: 0 calc(var(--pad) + var(--safe-r)) 80px calc(var(--pad) + var(--safe-l)); }
+.lock-screen { min-height: calc(100 * var(--vh) - 70px); display: grid; place-items: center; padding: 30px 0; }
+.lock-card { width: min(460px, 100%); padding: clamp(22px, 5vw, 34px); border-radius: 24px; background: linear-gradient(180deg, var(--sheet-top), var(--ink-2)); box-shadow: 0 0 0 1px var(--line), 0 30px 80px -30px rgb(var(--shade) / calc(.8 * var(--shade-k))); display: grid; gap: 14px; }
+.lock-card h1 { font-family: var(--serif); font-size: clamp(34px, 8vw, 46px); line-height: 1; }
+.lock-card .muted { font-size: 14px; }
+.filebtn { position: relative; overflow: hidden; }
+.filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+details.create summary { cursor: pointer; color: var(--gold); font-weight: 500; list-style: none; }
+details.create summary::before { content: "+ "; }
+details[open].create summary::before { content: "− "; }
+.studio-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; padding: clamp(22px, 5vw, 48px) 0 18px; }
+.studio-head h1 { font-family: var(--serif); font-size: clamp(40px, 9vw, 64px); line-height: 1; margin-top: 6px; }
+.art-card { cursor: default; }
+.art-card .card-body { gap: 8px; }
+.art-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.art-actions .btn { min-height: 34px; padding: 0 12px; font-size: 13px; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; padding: 4px; border-radius: 14px; background: rgb(var(--tint) / .05); box-shadow: inset 0 0 0 1px var(--line); }
+.seg button { appearance: none; border: 0; min-height: 42px; border-radius: 10px; background: none; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--cream-2); }
+.seg button[aria-pressed=true] { background: rgb(var(--accent) / .16); color: var(--gold); box-shadow: inset 0 0 0 1px rgb(var(--accent) / .35); }
+.field textarea, .field select, .field input[type=number], .field input[type=url] { width: 100%; padding: 12px 14px; border-radius: 12px; border: 0; background: rgb(var(--tint) / .06); box-shadow: inset 0 0 0 1px var(--line); color: var(--cream); font: 15px var(--sans); }
+.field textarea { min-height: 84px; resize: vertical; }
+.field select { min-height: 48px; }
+.field textarea:focus, .field select:focus, .field input:focus { outline: none; box-shadow: inset 0 0 0 1.5px var(--gold); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 480px) { .row2 { grid-template-columns: 1fr; } }
+.warn { font-size: 13px; color: var(--gold); background: rgb(var(--accent) / .08); border-radius: 10px; padding: 10px 12px; box-shadow: inset 0 0 0 1px rgb(var(--accent) / .2); }
+.ed-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ed-table th, .ed-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.ed-table th { color: var(--cream-3); font-weight: 600; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+.ed-table td.mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; white-space: nowrap; }
+.ed-table tr.revoked td { opacity: .45; text-decoration: line-through; }
+.ed-table .btn { min-height: 30px; padding: 0 10px; font-size: 12px; }
+.table-wrap { overflow-x: auto; max-height: 50vh; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--line); padding: 0 8px; }
+
+/* print sheet of QR cards */
+#print-area { display: none; }
+@media print {
+  @page { size: A4; margin: 10mm; }
+  body.printing > *:not(#print-area) { display: none !important; }
+  body.printing { background: #fff; color: #111; }
+  body.printing #print-area { display: grid !important; grid-template-columns: 1fr 1fr; gap: 6mm; }
+  .qr-card { break-inside: avoid; border: 0.3mm dashed #bbb; border-radius: 3mm; padding: 6mm; display: grid; grid-template-columns: 34mm 1fr; gap: 5mm; align-items: center; font-family: Georgia, serif; color: #111; }
+  .qr-card img { width: 34mm; height: 34mm; image-rendering: pixelated; }
+  .qr-card h3 { font-size: 15pt; margin: 0 0 1mm; font-weight: 600; }
+  .qr-card .by { font-size: 9pt; color: #555; margin-bottom: 2mm; }
+  .qr-card .ed { font-size: 9pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #a35a1f; }
+  .qr-card .code { font-family: Menlo, monospace; font-size: 8.5pt; letter-spacing: .04em; margin-top: 2mm; }
+  .qr-card .how { font-size: 7.5pt; color: #666; margin-top: 2mm; font-family: Helvetica, Arial, sans-serif; }
+}

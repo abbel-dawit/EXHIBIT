@@ -1,0 +1,73 @@
+{
+ "app": "golden-hour",
+ "v": 1,
+ "updated": "2026-11-18T08:00:23.764Z",
+ "artist": {
+  "name": "Mieraf Girum",
+  "publicKey": {
+   "kty": "EC",
+   "crv": "P-256",
+   "x": "_zqZy3GHaY5QGd-6JTCcifu5c-PUH3n1A8cDE5JwuuA",
+   "y": "G_lxNi8Y055WM4FMsDv3d-xdASPUr4AC36YKA9I8YmA"
+  },
+  "keyId": "2E7C A2C6 7212 851C"
+ },
+ "artworks": [
+  {
+   "id": "golden-hour",
+   "added": "2026-11-18",
+   "editionsTotal": 10,
+   "files": {
+    "image": "art/golden-hour/image.6cbae1ab32.bin",
+    "meta": "art/golden-hour/meta.645a229f6d.bin"
+   },
+   "editions": {
+    "1": {
+     "k": "cdyx+XKrSMc2EULSery9CuG3lNmNLQOCClowU+ApLN1yEJtvMChMT0aTFd1JRZYXjkfJkKFOCiTEv0L8",
+     "c": "fdTTk69hhz7d9eL0OrbPrdeT+PbynSUg46wFszoIZlfS6s3fTk4dREVHYjS3OBv7RZejV0/aCR+6vnbqtJfUOhcZukGM4gm5VZuanmPX1uKWznf9woTDU8R0O8o2Twiu64ay5PurjHn+lytWffgS64pxhFxipMw621YG+wjaw7vVlEyYi3utNMJda55DKMewuw3DpideLAuvCpIepM+gwOjgsKlLy8aDSK8+T5AAuatAef5SOFGrvjKWJN2Uo6p2rTuKGU4kQy9JHyjTdeDB9K2zAoVqZ/Pp+SrIY8oLHFlRVDH+zyLi1Ikq5EKWO6cL9WEcRITpjA5RxwxIeyaiE9f/cd5rdBniHxgVeI0EFf38FSXHHnaPf/POmuEOTKDg0JTZMPkWFT3Y5mhGai7TzOLojt7K4WerX6ZaqarACViSO0NafCYX9CeWJuLzVzj1Dj7l76wepbwPVmaUk+dCqcWC6GVgTqviY4iso2Wwv1pYhTvtvUXQ7wKlRvSc/iKGHI5e01yDVXnY8JhM/d2XLwVTuNaiARubLW7jS65tQoddWlpRRxKyYRNWvXa0IDzb7VM="
+    },
+    "2": {
+     "k": "923aJaddQ4TOLlMlVpZraq3doQVVPo+6q0yZhG0QbvBqwgQ6R1A9tBMsVreY9Ff4Po9NRtLxi6VY24gi",
+     "c": "uPSQN5ZHAWyYLHVAIBReeCFxAz/a2pnm2ccdSMay5iF4eroo/aD0FmazTk1Yw6yK8cgItB+QYpL26jwzMe9N9Ctpsdjyta+e9Egmark+V9NKeFwLSUZvNhTFj/xEQnntQ/PgAi24yIUGduJHZoYnndNhtfmy0dGtaVkElN9TGvVP3n0R71SvWYHxlo2QtsV1Z3RbYrlU3hpDRy0SP7oP7csUPFYA4OY7RISX8W9jhV6hY9XdG5IVZDy7hMZs72yMoytA2ai9ve1snpYDnZ4g0WE5wtmUSfxfhB+Vn25MsVrVi5VuWDh7vBhE8KYegw/DmZlr+8E/KxpuAZi83IyWOLSChfDmYUZgns44GpVetOeV8OCHhReaqO/5stXt3nqhrvN6iqb3BCAx09tajjbf3bbKOEFLu423NSNNtWPCXRBrxf3bfeasrJ8boovsejRZegHAxXEPoC4sjyzw4DAKg/whpV5HjunT5CHcdkbMWmL2WBwekrAbroDpFi9q1ebW/vFV1vtt+JoT4erUmP4TnMUISwQZ+yRkMdt8tNwZG1LPRuOcZtmLIzASRbd/lmJOdjk="
+    },
+    "3": {
+     "k": "E1k0iN0lB0naO1t/2jCQUNWs0hWFkvW6u3XOu/qgFdwAg5+YPUfIkKm7l4fJRs3Rk+JvbWZPxs4V493+",
+     "c": "BZcVcZJKdLR8GheDmC8ZMJRaLy1ON6wwn/9NnX4UmsiT3hfSS+H7vzwtuHcxjVtTGGXp9VpRItxYhO1Nz6JcAfUq4Jpja48A8IputFKxI97QkRXuEXG1mV1vgyMC1Z11U31vwpLVYGQvf3OUOEwSgRqX6Q9LXnk4/Pb38lf3Wct+WAuYrASeAmnDjBfojKD/MrBSLjGOm6Wrq3nBgXlI60EFWC2ZUCs6bQ9wZbQX2jvWufI0euO/Q6EB7ZKyYwJvWBHRTEpAfUSwMsyUaoB3DnA/JG6JgYNtNfJioc4qnXt/zydsiZFN0vBOCSw0CuUIgO/QxCqbxOECGD4PAYJeEy0ZroT13PH+5QrdjIk9hZujTmrwL7a7yiT00CNqvhCOSt+mzluPOlQbeBJWCB6AuzfkTiLvVG6ifFp8bHIjz1nr8ZHwjKH3TLhKQOBx/BYA3Asi02F0wtVi9XlxCLlMLR2y20y7wgjs1K1lGf8oHL1r9knYHG4hNyp6PbTnIfYhkdgLqHeP5G0XHqR2Di/fNISYN09kX8s4uj161tHwIxO3cuwmf9Xq8UU4jGef25SX+3Q="
+    },
+    "4": {
+     "k": "ip+uvH6J9rnW/rzcRZc0CmJgm4nsltgJMhX9gUjtlplP2Y1MFEJFuu2+7d4zICCIdhOIuX6zJJiu77Is",
+     "c": "sI3mI+wNPPN4n58VlO4Z1i5aFUydttOXLSDZDSKmJF9TRIrvBvXHrAQ3u3zcF2q77DATTqal1W9S/Z3BJP6eMgDmWCAYRSBhVhZ0ScFNJboQrL4YOlWkov2l7RwfBovePva4V7vXK9Pz0tOBYM8uLTKAiHl6HXiLrZasiMOcvOkPw2Q/Z/C1tuHzMETwEIenHAp6m8JUCO3piaqbvxiYIOoSNlR8hM2Rgm0qewx/UcarkPXK5wG7WmwCokgmnokB4hMgvgXRIbpWDzeuvWlI+KSxKZgjAuvQ1lrN2clFY9dDkCmhWP+Lx630VN1SmEfQJJuVyeYA0Siavdyhm8bNdJdzZQOtEBEGv/WYzgaFkBtO7CPoJ7WZktXpxQjwSj4kEDplXw/nVlcY5o98Hy2eyGEPawVmYuXoN0oeX555n6z3XiXddcI+yNF0ci3nWwHwzrXLKJrtXS2eFnjzyZ0nnt4MkPwA65XCEiP5q7SSjIwLC4jibJ36D335kQfu/tpkv72XUGEp9eMH+NMWnvhztLPwE45CcOgrUckY+jN2r18IeVa8RtsQbOI/t1Tb4cE+jwM="
+    },
+    "5": {
+     "k": "Vwqg8cEYjO32H822upn9rM5AMtoMOGy6VTm9h3Vr8NZQMRLF/eKBdWlIUzu3sBVEJNS7gotlYkPb0TZg",
+     "c": "wXCc0vGpih3g6agu546UP3LOTdJca4vqAk6b1LWnCpGQBH+vcaBBc16G0NjG0d54P2TbheqdTWSZ0M0ai2exYMzCS2pY3SUXpyC1srrfiK4gKAkN+l76pd0mL3sr3qT++VUWLn04YY70ooj7XryzuppT/wdTr+FJkWA+U5TBucZ0sIbodXjmsJLaLTbpu3kJUnZ9IxtXZpM+iun61lD0V8cJJF4pT8HwPql4oC0yJTg+IVCFF22RJm8HoENjsE1ygxOoPeYDdt4VMHyiirjC9t4zDfiR3sZFVvfc2fQYesMRYcgYKUojzkykFXj/YwW8BYJaYyTD4up473yTpL9IiReX5AxWt88lkGwBksRwvkajDYBsVi5DuhxZ3Eq5bD4PDmOZmm0CpR2F2gUYUkrBqD9aNSESJ3jQwdTTbsCFz5+rMn9jQ3fwk0MX+JpFGEhLaQyZ1lBk0bEO1AvzuQ1EAskouqn+1k494ISdhh9zawUO4Fs/3VCoWQ+zkQMexp2OAt4GEOf1no2XsSVpy5jYoVwWpw5EH1bxXWluikMSLaPL9DbpjahvTqrHAXsWnTNum7o="
+    },
+    "6": {
+     "k": "eVu0cDxYp5yagWWXltnACTZ1rrmbQ8FNAaivq3qRr4nuPLcTcyUfMLSQT/kN+OfQVDOsmOW/OHzTk2a5",
+     "c": "man0SUzI87QuYTznqdiv0mNZzIRJKta5cJVLGiL2HoEImH8F12aiBbwuswUyD3PRo/KpgGB2dA6/f+Z9zNZMiQ14954wAZ39IYZ3Xq4fAmooKMqhtp+K+DKAsKuOwZOfyiRnVOCsWE++Z9GKuEV7gU5fkhet+NXHXyVp123VM1RZHmk/5o/yGTIuMnQiwe0AxzS5nFiCIWKzQ8hhmuJFw7FzAKi6f4+/ZYAmJzGRQC9DUSxcn9kDrxUlOlHBC7TR5EmM+HxR4CnMUTsllGrKNS8oVesSfTCHfxZVA87+uFU45CKQ7ordthTo1d2ldwQrxSukBFbALPDjTHe2uz3yP4TXBC6VoSuH+lOO9yUYxeMwJDoZwkI0IveVHXPTmYunmKDVh/g+BewwAbpVWUSKzIxkOYSa4HZNSfYLX0IPG25Lo3MBYCAUKtlV1c6RUgMhvz88ikxQ0sMitMi9V0urFexHwEQ3htXYdJP7Z+4IJMu/lItBF8w+O3Ut/IMyO3mvpkX+fcbIcVdONwNs/gy4mZfHEN72URQjrkiYRcMQy3mvF96YPEeprAFnpzzibjuey50="
+    },
+    "7": {
+     "k": "GV9BrlIx2xAcICSdYTuDQTrCo0lVWOZHFJc1LM8dzbgf54u83onkgsqPAExOrIUqRcKYwK+JIvmWo4Cm",
+     "c": "AYK13oEdWuT1N3ZrIWYw5czs5cce0/cZxf7XGFTrFTjuwjIKHLEvwDJcAVagkv2qdg3QiXJXZrVF9AU8s41E8qzkqnWpkrCaXmQ0lg7lK69i0z6wCWPSdRoc7MjTCHHOhbNXoT1btgbZi06VBedjub4mxHFzfGVXQNJWiOeVbjux9EopylWFwCi300go2YRAKB4MPFqBnWgpz4LlXDvhktuJeFdqfEnSMvq27YqQggmU3ClCxAMnJ/W5kuTnJCTQzwXLmsR8x2TKz0Pc2xslxTqbna4ASoZqiLk9NlBykmGOXrBb4djLtwF8Ogjrrj+EM7OlLwXFy3b7/xJzTedITIh4+WwfPY1UUcI3TriHkzmChQsuaOg8FjWnhm+ceeT6w3BHYfYoMznqRgSPSJvTXTJHqdPgoTiIzS5JnjQ8sgmXglEyW4SWfbuprQdid7WhNzPXd7A3BExoWTO54NYcS7/20B+UIoY3yc48CZJ1GldvuZaPD+p9B32C82fG6aKpguFGH2Y7gLHvvHdw52cRr1/gohO/RqC7xswW8A0CFzwOM13gFc2gcEdhjXOi2daxcbo="
+    },
+    "8": {
+     "k": "MFLOHvtVNZGl2dxh5lal4DwTRR9zIXtEG95v5FB2RnBFQeGHlWhJSUue9OqqcWvbPC8ufxJp3qH18Wac",
+     "c": "5TTS52Hi5HIuICP7rk/aipgn3jyXllWtNcBFUcBtfPrUaLJFU1SYOtSOBdn9fkg7PEJyT7j9cW4ZxXMeCO7VEKFb8LyPkOui7F7WqSVKU6TSW3W/p1eKCxzhnQRYxDtvv3thvu1pVIaXR6RSMjGY8LmBLxJ8CdCBVJH4i0ASxYv0CP2ASW0houKGr/SLjlYumw5IQJp2mxT5MMdpNA7zGRURSF0miUJes7CPI4F3irVzo4YAUjt5ZnXiYNUpDFO32dxJUqX7ofFxmVR4gYqNbGmkyCAwQ7J+mo4hnDFSoQUZTj1YcUsbSf0uekpS07FxKByBqwNQL4U/r8/JxW3fHXVaeHy5T32o1KRNTOhJQyDwgIXdygvN5ctqoH2bc740XYXI0/smqXCKGX5CvhV5CtJx5lY31OgLrsuAqVliHdKODGJMpTdljzR/nnqmqjZhLR4OgyQJdPviAkzoXvk/t5J1thFPUSxKqbnJcRgbZevMOj9/XiKwxFsPgorlFRvNBKElXAZO8pJDn+lYM/jQ3uGR+RB2ZjEorbJgrGIXxQc0j/yipKh1xK39+NwxRMiMid4="
+    },
+    "9": {
+     "k": "AdFNwgq6wXYj/d5nzJo3fTS78hkeQx98+YfYNZEIssj09YkSaElwBTXDU5RA0AIhqH5lQAtPnwRWa3lJ",
+     "c": "sWczyRQ3ivg2n2v8+g/9OWJg/zgvBvf0YsQYkHqml0NmCg3fsFFgzh7RZeRZgCisJNGp9mdf8KsiHvXneWRDkhEJ3tGor+MewK5AvR9umV3LngL9KmWzLhOlaL0kRavOf5d2S7/2IWDufysvDa1ZtDKj/XHqPc9uq4HqE19AesnfZCA7sF0wWW2CdL87pQwEqeStDVKFhrIAUdxZ6AnDx8WLc6lDPj2ju0WXNbwPc+f8c9odft72x5JNFCDBQGXzxIBYUQLfxT7hxqfvNC5xohGdGx2DcmibVCEBTscOKFGVVC9iYWvn46TtgcSMJCzNlPvgFG9WpkGxJFQ/gh9nkebpezEyRLg/LW8/kfBjWur4QvdZ9AKribEzWJhOR1zzCIozYNSMe/CuwiJzCjsqkPkXc/xIgYHKJuL+o1NtRykrXN7cOnOTt6n7be9FEXOSxbOWcaTdXmjviYI5bD/uT8CDWoLkYpk67Agq038T7cC4oQc2nAlU4Ls0rkkr3VpAJw81uuaGst7Al13JK9YOKxeLrNedfeFl7Y3F7tntZeuXWcRLzFS2zU2edaIn7p1mD30="
+    },
+    "10": {
+     "k": "yqIDlSnaYqdZaiHThBtqrj04T3eqKh3jUDeSxOfjYm/1EIeFW1DT4RycsBAHFThFVPFQkl3jW582+jP5",
+     "c": "Sn6TSI9iVkNrdlBHAHcannxE+MwXKwiRS43JWstbBEdsiGXnf4KK0cBlrgSIfYX0HP67IkJuCVU7+2CIEmtM0P58WSTH3DjmeCoquD6BobQOfvTTxiEXhSzqkcvvzAXNXjS0BPUOS9KML53i3mWu6efpI9jRM0rzNIRexKb1ZI5zmCYn0VJXQuwSyO+GuqgTqoclvy4y4qY8hwfVp1AgsmYCIv7rtYlI3gifes3G41HQlysXQB2xEqMXx3Q0iGh7nwzofHO9BV5yAHRbc9TOVS9GYvtaA2TLQO7TAQ4ld/sJ//qGxiqRNPCfO9Q2QyJJah9R1bfkgM1wdkG0ap3zatvmncApkMDa4XQI6rkX0SKgS1FRfh1l16KiYWBHn09aWyV0A6Y3SB0ZhC2sRUvXuc51nyOOwXEMVf4Avz6HiI4pvg+tmCk8ZVpfPhwBLfrcNarSnWemFOJ6nA7MX6+kUW9fLQEd4vBFa4j2Dh6oNd/HxzqHBIiGkvSq6NO7rIvuPFbfB9zKL/E9ARw0fJ/n1OP4UK/TID+xo+EnPSXFcOsD4TkC0mxkCRQkyLCKSBg2P5pj"
+    }
+   },
+   "nfc": {
+    "k": "puEjgW8tXCOStGkckk2YgW/AxURWOTVRX1FWBA/TMGwBTHt7gMmUXJw80/SIaYM3jJnwKiCnjFR7SYk5"
+   },
+   "teaser": "art/golden-hour/teaser.59f4f4f057.jpg",
+   "publicTitle": "Golden Hour"
+  }
+ ]
+}
