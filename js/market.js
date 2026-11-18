@@ -183,6 +183,9 @@ export function openOrder(l, ctx, { fromArtist = null } = {}) {
       profile.set({ name, place });
       const site = location.origin + location.pathname.replace(/index\.html$/, '') + '#marketplace';
       const text = orderMessage({ listing: l, artist: a, size: size(), qty: n(), name, place, note, currency: cur, ref, site });
+      const kind = b.dataset.send === 'whatsapp' ? 'WhatsApp' : 'Telegram';
+      const hasContact = b.dataset.send === 'whatsapp' ? String(a.whatsapp || '').replace(/\D/g, '') : String(a.telegram || '').replace(/^@/, '').trim();
+      if (!hasContact) { toast(`${kind} contact is coming soon`); return; }
       let url;
       if (b.dataset.send === 'whatsapp') {
         const num = String(a.whatsapp || '').replace(/\D/g, '');

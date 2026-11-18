@@ -228,7 +228,9 @@ async function renderCollection() {
 
   // backup nudge
   const lb = await lastBackup();
-  $('#backup-banner').hidden = !n || (lb && lb > Math.max(...state.collection.map(e => e.unlockedAt)));
+  const newest = n ? Math.max(...state.collection.map(e => e.unlockedAt)) : 0;
+  const dismissedAt = Number(localStorage.getItem('ex-dismiss-backup') || 0);   // dismissed: comes back when a new poster is unlocked
+  $('#backup-banner').hidden = !n || (lb && lb > newest) || dismissedAt >= newest;
   renderHero();
 }
 
@@ -940,11 +942,17 @@ let deferredInstall = null;
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; updateInstallBanner(); });
 function updateInstallBanner() {
   const b = $('#install-banner'), btn = $('#install-btn'), txt = $('#install-text');
-  if (isStandalone() || !state.collection.length) { b.hidden = true; return; }
+  if (isStandalone() || !state.collection.length || localStorage.getItem('ex-dismiss-install')) { b.hidden = true; return; }
   if (deferredInstall) { b.hidden = false; btn.hidden = false; }
   else if (isIOS) { b.hidden = false; btn.hidden = true; txt.innerHTML = '<b>Add EXHIBIT to your home screen:</b> tap the Share button, then “Add to Home Screen”. Then use <b>Unlock → Restore</b> with a backup to bring your posters into the app.'; }
   else b.hidden = true;
 }
+document.addEventListener('click', e => {
+  const x = e.target.closest('[data-dismiss]'); if (!x) return;
+  const which = x.dataset.dismiss;
+  try { localStorage.setItem(`ex-dismiss-${which}`, String(which === 'backup' ? Math.max(0, ...state.collection.map(c => c.unlockedAt || 0)) : Date.now())); } catch {}
+  const b = x.closest('.banner'); b.classList.add('gone'); setTimeout(() => { b.hidden = true; b.classList.remove('gone'); }, 250);
+});
 $('#install-btn').addEventListener('click', async () => { if (!deferredInstall) return; deferredInstall.prompt(); await deferredInstall.userChoice.catch(() => {}); deferredInstall = null; updateInstallBanner(); });
 
 // ================================================================ auto-updates (service worker)
@@ -1063,6 +1071,8 @@ let pendingUnlock = null, pendingNfc = null, pendingJoin = null;
   if (legalHash) history.replaceState(history.state, '', location.pathname + location.search);
   applyTheme();
   mountThemeButton($('.nav-actions'));
+  $('.nav-actions').prepend($('.nav-actions .theme-wrap'));   // order: light/dark · Unlock · profile picture
+  $('.nav-actions').appendChild($('#account-btn'));
   initServiceWorker();
   fetch('version.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(v => { if (v?.version) $('#foot-version').textContent = `v${v.version}`; }).catch(() => {});
   await runSplash({ landing: !pendingUnlock && !pendingNfc && !pendingJoin });

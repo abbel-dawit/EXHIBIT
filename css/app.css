@@ -1340,3 +1340,51 @@ body.auth-open .tabbar, body.auth-open .preview-pill { opacity: 0 !important; po
 .acct-note { text-align: center; margin: 0; }
 .panel-head .seal svg { width: 14px; height: 14px; }
 body.auth-open .sheet-wrap { z-index: 98; }
+
+/* top bar: evenly spaced, nothing touching */
+.nav-actions { gap: 10px !important; }
+@media (max-width: 440px) { .nav-actions { gap: 8px !important; } }
+@media (max-width: 350px) { .nav-actions { gap: 6px !important; } }
+.account-btn { box-shadow: none !important; border: 2px solid var(--mustard) !important; padding: 2px !important; background: var(--raised) !important; }
+.account-btn .ex-avatar { font-size: 13px; }
+
+/* dismissible notices */
+.banner { position: relative; padding-right: 48px; transition: opacity .25s, transform .25s; }
+.banner.gone { opacity: 0; transform: translateY(-6px); }
+.banner-x { appearance: none; border: 0; cursor: pointer; position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: rgb(var(--tint) / .07); color: var(--cream-2); }
+.banner-x:hover { background: rgb(var(--tint) / .14); color: var(--cream); }
+.banner-x svg { width: 16px; height: 16px; stroke-width: 2.2; }
+
+/* profile page: numbers close together on the left */
+.acct-stats { justify-content: flex-start; gap: 34px; }
+.acct-stats > div, .acct-stats .c, .acct-stats .r { text-align: left; }
+
+/* artist pictures: the yellow ring sits inside the picture so lists never clip it */
+.artist-av, .artist-card-body .artist-av, .artist-id .artist-av { box-shadow: none; border: 2.5px solid var(--mustard); padding: 3px; background-clip: content-box; background-origin: content-box; box-sizing: border-box; }
+.artist-av { width: 72px; height: 72px; }
+.artist-card-body .artist-av { width: 54px; height: 54px; border-width: 2px; padding: 2px; }
+.artist-id .artist-av { width: 84px; height: 84px; border-width: 3px; padding: 3px; background-color: var(--ink); }
+.artist-strip { padding-top: 6px; padding-bottom: 8px; }
+
+/* Buy Now: theme yellow with black text and icon, a little space above */
+.pill-cta { margin-top: 14px; background: var(--mustard); color: var(--mustard-ink); box-shadow: 0 10px 24px -10px rgba(229, 169, 26, .75); }
+.pill-cta svg { stroke: var(--mustard-ink); }
+.pill-cta:hover { background: #eeb529; }
+
+/* top bar buttons: three identical circles, evenly spaced and centred */
+.nav-actions { align-items: center; }
+.nav-actions > .theme-wrap { display: grid; place-items: center; width: 44px; height: 44px; min-width: 44px; max-width: 44px; flex: 0 0 44px; }
+.nav-actions .nav-btn, .nav-actions .theme-wrap .nav-btn, .nav-actions .nav-btn.gold, .nav-actions .account-btn {
+  width: 44px !important; height: 44px !important; min-width: 44px !important; max-width: 44px !important; min-height: 44px !important; max-height: 44px !important;
+  flex: 0 0 44px !important; padding: 0 !important; border-radius: 50% !important; display: grid !important; place-items: center !important; box-sizing: border-box; margin: 0 !important; }
+.nav-actions .nav-btn .lbl, .nav-actions .nav-btn.gold .lbl { display: none !important; }
+.nav-actions .nav-btn svg { width: 20px !important; height: 20px !important; margin: 0 !important; }
+.nav-actions .account-btn { padding: 2px !important; }
+.nav-actions .account-btn .ex-avatar { width: 100%; height: 100%; }
+@media (max-width: 440px) {
+  .nav-actions > .theme-wrap, .nav-actions .nav-btn, .nav-actions .theme-wrap .nav-btn, .nav-actions .nav-btn.gold, .nav-actions .account-btn {
+    width: 40px !important; height: 40px !important; min-width: 40px !important; max-width: 40px !important; min-height: 40px !important; max-height: 40px !important; flex: 0 0 40px !important; }
+  .nav-actions .nav-btn svg { width: 19px !important; height: 19px !important; }
+}
+.nav-actions .account-btn { place-items: stretch !important; }
+.nav-actions .account-btn .ex-avatar { display: grid; place-items: center; width: 100% !important; height: 100% !important; aspect-ratio: 1; border-radius: 50%; }
