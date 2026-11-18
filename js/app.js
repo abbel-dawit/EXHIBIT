@@ -88,7 +88,7 @@ function splitTitle(el, text) {
   }).join('');
 }
 
-async function runSplash() {
+async function runSplash({ landing = true } = {}) {
   const stopEmbers = () => {};
   const bar = $('#splash-bar'), status = $('#splash-status'), pctEl = $('#splash-pct');
 
@@ -130,17 +130,31 @@ async function runSplash() {
     await engine;
   })();
 
+  // landing page first (loading already runs underneath); deep links skip straight to the splash
+  const land = $('#landing'), boot = $('#boot');
+  if (landing && land) {
+    land.classList.add('ready');
+    await new Promise(resolve => {
+      const go = () => { try { navigator.vibrate?.(10); } catch {} resolve(); };
+      $('#launch').addEventListener('click', go, { once: true });
+      setTimeout(() => $('#launch')?.focus({ preventScroll: true }), 900);
+    });
+    land.classList.add('leaving');
+    setTimeout(() => land.remove(), 900);
+  } else land?.remove();
+  boot.hidden = false;
+  requestAnimationFrame(() => boot.classList.add('on'));
+
   // smooth display that can never run ahead of the real progress, and must hit 100
   let shown = 0, finished = false;
   prep.then(() => { finished = true; });
-  const t0 = performance.now(), minTime = reducedMotion ? 800 : 3600;
+  const t0 = performance.now(), minTime = reducedMotion ? 600 : 2400;
   await new Promise(resolve => {
     (function tick() {
       const target = finished ? 1 : Math.min(.99, real());
       shown += (target - shown) * .12; if (target - shown < .002) shown = target;
       const pct = Math.round(shown * 100);
       bar.style.width = Math.max(2, pct) + '%'; pctEl.textContent = pct + '%';
-      $$('.sp-dots i').forEach((d, i) => d.classList.toggle('on', pct >= i * 34));
       status.textContent = pct >= 100 ? 'Ready' : (label.includes('Teaching') ? `${label}` : label);
       if (pct >= 100 && performance.now() - t0 > minTime) return resolve();
       requestAnimationFrame(tick);
@@ -150,8 +164,8 @@ async function runSplash() {
   clearInterval(factTimer);
   $('#app').hidden = false;
   requestAnimationFrame(() => $('#app').classList.add('in'));
-  $('#splash').classList.add('leaving');
-  setTimeout(() => { stopEmbers(); $('#splash').remove(); }, 1100);
+  boot.classList.add('leaving');
+  setTimeout(() => { stopEmbers(); boot.remove(); }, 1000);
 }
 
 // ================================================================ rendering
@@ -886,8 +900,12 @@ async function openAR(entry) {
   } catch (e) {
     console.error(e); off();
     if (view.hidden) return;
-    const denied = /permission|notallowed|denied/i.test(String(e?.name) + String(e?.message));
-    gate(denied ? 'Camera access blocked' : 'Something went wrong', denied ? 'Allow camera access for this site in your browser settings, then try again.' : 'We couldn\'t start AR. If this is your first visit, connect to the internet once so the camera engine can download.');
+    const txt = String(e?.name) + ' ' + String(e?.message);
+    const engine = /dynamically imported module|Importing a module|module script|Failed to fetch|error loading|Load failed|MindAR|compiler/i.test(txt);
+    const camera = /NotAllowed|Permission|denied|NotFound|DevicesNotFound|Overconstrained|NotReadable|TrackStart|AbortError|getUserMedia|video/i.test(txt);
+    if (camera) { const { cameraErrorMessage } = await loadScanner().catch(() => ({ cameraErrorMessage: () => 'The camera couldn\'t start.' })); gate(/NotAllowed|Permission|denied/i.test(txt) ? 'Camera access blocked' : 'Camera problem', cameraErrorMessage(e)); }
+    else if (engine) gate('AR engine didn\'t load', navigator.onLine === false ? 'You\'re offline. Connect to the internet once so the AR camera engine can download, then it works offline.' : 'The AR camera engine couldn\'t download. Check your connection and try again.');
+    else gate('Something went wrong', `We couldn't start AR (${String(e?.message || e?.name || 'unknown error').slice(0, 120)}). Try again, or restart the app.`);
   }
 }
 function toggleARMode() {
@@ -952,6 +970,11 @@ document.addEventListener('click', e => {
   if (card) { const en = state.collection.find(x => x.key === card.dataset.entry); if (en) openDetail(en); return; }
   const a = e.target.closest('[data-action]'); if (!a) return;
   const act = a.dataset.action;
+  // a tab tapped while the 3D gallery is still asking how to move: leave the room and go there
+  if (state.room && a.closest('#tabbar')) {
+    if (act === 'gallery3d') return;
+    state.room.close();
+  }
   if (a.tagName === 'A') e.preventDefault();
   if (act === 'home') setView('home');
   if (act === 'see-collection') setView('mine');
@@ -1010,7 +1033,7 @@ let pendingUnlock = null, pendingNfc = null;
   mountThemeButton($('.nav-actions'));
   initServiceWorker();
   fetch('version.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(v => { if (v?.version) $('#foot-version').textContent = `v${v.version}`; }).catch(() => {});
-  await runSplash();
+  await runSplash({ landing: !pendingUnlock && !pendingNfc });
   const contact = mountContact({ toast });
   document.getElementById('tabbar')?.appendChild(document.getElementById('contact'));
   contact.show();

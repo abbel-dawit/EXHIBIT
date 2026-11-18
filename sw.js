@@ -48,6 +48,7 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  if (url.hostname === 'cdn.jsdelivr.net' && /\/npm\/(three@0\.160\.0|mind-ar@1\.2\.5)\//.test(url.pathname)) return event.respondWith(cacheFirst(req, SHELL));   // pinned fallback libraries, kept for offline use
   if (url.origin !== location.origin) return;                 // never touch other sites
   const path = url.pathname.slice(new URL(self.registration.scope).pathname.length);
 

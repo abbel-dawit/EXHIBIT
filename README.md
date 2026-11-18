@@ -34,6 +34,8 @@ Each deploy automatically:
 - bundles the open-source libraries (3D engine, image tracking, fonts) into the site, so nothing loads from other servers. The QR scanner and the Studio's QR printing are built into the app itself (`js/qr.js`), so they work however the site is hosted.
 - stamps a new version, which makes every installed copy update itself
 
+> **AR not starting?** The AR camera engine (MindAR) and 3D engine (three.js) are bundled into `vendor/` by the GitHub Actions deploy. Make sure **Settings → Pages → Source** is **GitHub Actions** (not "Deploy from a branch"). If the site is ever published without that step, the app now loads the same pinned versions from jsDelivr instead, so AR still works, but the first AR start then needs an internet connection.
+
 ## 2 · Try the demo
 
 The repository ships with **Golden Hour** by **Mieraf Girum** (the woman in the golden light) and 10 demo editions. The demo keys were regenerated for this version, so the old demo codes no longer work. The new codes, the demo vault and its password are in the separate demo-keys download (`demo-codes.txt`, `exhibit-demo-vault.ghvault`). Keep them out of the public repository.

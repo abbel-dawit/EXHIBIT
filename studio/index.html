@@ -14,11 +14,19 @@
 <link rel="stylesheet" href="../css/fonts.css">
 <link rel="stylesheet" href="../css/app.css">
 <link rel="stylesheet" href="studio.css">
-<script type="importmap">
-{ "imports": {
-  "three": "../vendor/three/three.module.js",
-  "three/addons/": "../vendor/three/addons/"
-} }
+<script>
+/* Libraries (three.js 3D engine + MindAR camera tracking) are bundled into /vendor by the deploy step.
+   If this copy of the site was published without that step, use the same pinned versions from jsDelivr instead. */
+(function(){
+  var base = '%s', cdn = 'https://cdn.jsdelivr.net/npm/', local = true;
+  try { var x = new XMLHttpRequest(); x.open('HEAD', base + 'three/three.module.js', false); x.send(); local = x.status >= 200 && x.status < 300; } catch (e) { local = true; }
+  var V = local
+    ? { three: base + 'three/three.module.js', addons: base + 'three/addons/', mindar: base + 'mind-ar/mindar-image-three.prod.js', compiler: base + 'mind-ar/mindar-image.prod.js' }
+    : { three: cdn + 'three@0.160.0/build/three.module.js', addons: cdn + 'three@0.160.0/examples/jsm/', mindar: cdn + 'mind-ar@1.2.5/dist/mindar-image-three.prod.js', compiler: cdn + 'mind-ar@1.2.5/dist/mindar-image.prod.js' };
+  V.local = local; window.EXHIBIT_VENDOR = V;
+  if (!local) console.warn('EXHIBIT: /vendor is missing on this site, loading three.js and MindAR from jsDelivr. Deploy with GitHub Actions to bundle them.');
+  document.write('<script type="importmap">' + JSON.stringify({ imports: { 'three': V.three, 'three/addons/': V.addons, 'mindar-image-three': V.mindar } }) + '<\/script>');
+})();
 </script>
 </head>
 <body class="studio">

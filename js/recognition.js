@@ -3,7 +3,9 @@
 //   3. cached on this device    →  4. built on the device from the artwork (first time only)
 import { db } from './db.js';
 
-const COMPILER_URL = new URL('../vendor/mind-ar/mindar-image.prod.js', import.meta.url).href;
+const COMPILER_URL = globalThis.EXHIBIT_VENDOR?.compiler
+  ? new URL(globalThis.EXHIBIT_VENDOR.compiler, document.baseURI).href
+  : new URL('../vendor/mind-ar/mindar-image.prod.js', import.meta.url).href;
 const COMPILE_MAX_SIDE = 900;
 
 const memory = new Map(), inflight = new Map(), listeners = new Map();

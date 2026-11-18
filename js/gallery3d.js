@@ -320,11 +320,12 @@ export async function openGallery3D(pieces, hooks = {}) {
     </div>
     <div class="g3d-loading"><span class="g3d-spin"></span>Hanging your artworks…</div>`;
   document.body.appendChild(root);
+  document.body.classList.add('g3d-choosing');   // keep the tab bar usable until a way of moving is picked
   const $ = s => root.querySelector(s);
   const cv = $('.g3d-canvas');
 
   let G;
-  try { G = makeGL(cv); } catch (e) { root.remove(); throw e; }
+  try { G = makeGL(cv); } catch (e) { document.body.classList.remove('g3d-choosing'); root.remove(); throw e; }
   const { gl } = G;
 
   // textures
@@ -509,7 +510,7 @@ export async function openGallery3D(pieces, hooks = {}) {
     const b = e.target.closest('[data-g]'); if (!b) return;
     const g = b.dataset.g;
     if (g === 'exit') close();
-    if (g === 'pick-touch' || g === 'pick-motion') { $('.g3d-intro').classList.add('gone'); setTimeout(() => $('.g3d-intro')?.remove(), 400); await setMode(g === 'pick-motion' ? 'motion' : 'touch', true); }
+    if (g === 'pick-touch' || g === 'pick-motion') { document.body.classList.remove('g3d-choosing'); $('.g3d-intro').classList.add('gone'); setTimeout(() => $('.g3d-intro')?.remove(), 400); await setMode(g === 'pick-motion' ? 'motion' : 'touch', true); }
     if (g === 'mode-touch' && mode !== 'touch') setMode('touch');
     if (g === 'mode-motion' && mode !== 'motion') setMode('motion');
     if (g === 'play') { paused = !paused; paintPlay(); blockedFor = 0; }
@@ -620,6 +621,7 @@ export async function openGallery3D(pieces, hooks = {}) {
   let closed = false;
   function close() {
     if (closed) return; closed = true;
+    document.body.classList.remove('g3d-choosing');
     running = false; cancelAnimationFrame(raf); disableMotion();
     removeEventListener('keydown', onKey); removeEventListener('keyup', onKey);
     document.removeEventListener('visibilitychange', onVis);
