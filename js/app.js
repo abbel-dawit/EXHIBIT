@@ -1,18 +1,18 @@
 // EXHIBIT: collector app
 import { db, requestPersistence } from './db.js';
-import { loadGallery, listCollection, unlock, openArtwork, isOffline, mirroredCredentials, nfcPreview, closeArtwork } from './gallery.js';
+import { loadGallery, listCollection, unlock, openArtwork, isOffline, mirroredCredentials, nfcPreview, closeArtwork, syncEntry, overlaysOf } from './gallery.js';
 import { buildBackup, saveBackupToDevice, shareBackup, lastBackup, readBackupFile, restoreBackup } from './backup.js';
 import { parsePayload, formatCode, normaliseCode } from './crypto.js';
 import { getTarget, onProgress, isReady } from './recognition.js';
 import { shuffledFacts } from './facts.js';
 import { applyTheme, mountThemeButton } from './theme.js';
 import { mountContact } from './contact.js';
-import { privacyHTML, termsHTML } from './legal.js';
 import { loadMarket, renderMarket, openOrder, renderTrending, toggleFav, heartHTML, isFav, artistList, renderArtistStrip, renderArtists, openArtist } from './market.js';
 import { storyHTML, mountStory } from './story.js';
 import * as acct from './account.js';
 import { initAccountUI, ensureAccount, openAccount, avatarHTML } from './account-ui.js';
-import { qrToCanvas } from './qr.js';
+const loadQR = () => import('./qr.js');          // only when a sign-in QR code is shown
+const loadLegal = () => import('./legal.js');    // only when Privacy / Terms are opened
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -103,34 +103,19 @@ async function runSplash({ landing = true } = {}) {
     setTimeout(() => { fi = (fi + 1) % facts.length; factEl.textContent = facts[fi]; factEl.classList.remove('out'); }, 450);
   }, 5200);
 
-  // weighted tasks
-  const tasks = { gallery: { w: 15, p: 0 }, engine: { w: 35, p: 0 }, targets: { w: 50, p: 0 } };
-  const real = () => Object.values(tasks).reduce((s, t) => s + t.w * t.p, 0) / Object.values(tasks).reduce((s, t) => s + t.w, 0);
+  // Only the essentials block the splash: the gallery list and this device's collection (both
+  // tiny, cached offline). The AR camera engine and artwork tracking warm up in the background
+  // once the app is on screen (see warmAR), so opening the app never waits on a big download.
   let label = 'Opening the gallery…';
-  const setLabel = l => { label = l; };
-  const guard = (p, ms = 90000) => Promise.race([p, sleep(ms)]);   // never hang forever
-
+  const tasks = { gallery: { w: 1, p: 0 } };
+  const real = () => tasks.gallery.p;
+  const guard = (p, ms = 8000) => Promise.race([p, sleep(ms)]);   // never hang (offline, slow network)
   const prep = (async () => {
     await guard((async () => {
       state.gallery = await loadGallery();
       state.collection = await listCollection();
     })().catch(() => {}));
     tasks.gallery.p = 1;
-    if (!state.collection.length) { tasks.engine.w += tasks.targets.w; tasks.targets.w = 0; }
-    setLabel('Waking up the camera engine…');
-    const engine = guard(loadAR().then(m => m.loadMindAR())).catch(() => {}).finally(() => { tasks.engine.p = 1; });
-    if (state.collection.length) {
-      setLabel('Teaching your camera the artwork…');
-      const n = state.collection.length, prog = new Array(n).fill(0);
-      await Promise.all(state.collection.map(async (e, i) => {
-        const key = targetKeyOf(e);
-        const off = onProgress(key, p => { prog[i] = Math.max(prog[i], p / 100); tasks.targets.p = prog.reduce((a, b) => a + b, 0) / n; });
-        try { const art = await openArtwork(e); prog[i] = Math.max(prog[i], .05); await guard(getTarget(key, art)); } catch (err) { console.warn('prep', err); }
-        prog[i] = 1; tasks.targets.p = prog.reduce((a, b) => a + b, 0) / n; off();
-      }));
-    }
-    tasks.targets.p = 1;
-    await engine;
   })();
 
   // landing page first (loading already runs underneath); deep links skip straight to the splash
@@ -151,24 +136,43 @@ async function runSplash({ landing = true } = {}) {
   // smooth display that can never run ahead of the real progress, and must hit 100
   let shown = 0, finished = false;
   prep.then(() => { finished = true; });
-  const t0 = performance.now(), minTime = reducedMotion ? 600 : 2400;
+  const t0 = performance.now(), minTime = reducedMotion ? 300 : 1300;
   await new Promise(resolve => {
     (function tick() {
       const target = finished ? 1 : Math.min(.99, real());
-      shown += (target - shown) * .12; if (target - shown < .002) shown = target;
+      shown += (target - shown) * .2; if (target - shown < .004) shown = target;
       const pct = Math.round(shown * 100);
       bar.style.width = Math.max(2, pct) + '%'; pctEl.textContent = pct + '%';
-      status.textContent = pct >= 100 ? 'Ready' : (label.includes('Teaching') ? `${label}` : label);
+      status.textContent = pct >= 100 ? 'Ready' : label;
       if (pct >= 100 && performance.now() - t0 > minTime) return resolve();
       requestAnimationFrame(tick);
     })();
   });
-  await sleep(380);
+  await sleep(160);
   clearInterval(factTimer);
   $('#app').hidden = false;
   requestAnimationFrame(() => $('#app').classList.add('in'));
   boot.classList.add('leaving');
   setTimeout(() => { stopEmbers(); boot.remove(); }, 1000);
+}
+
+// ================================================================ background AR warm-up
+// After the app is visible and idle, quietly fetch the AR engine and prepare camera tracking for
+// collected posters, so "Start AR" opens instantly (and works offline later). Skipped on Data
+// Saver / 2G, where it happens on demand instead.
+function warmAR() {
+  const c = navigator.connection;
+  if (c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || ''))) return;
+  const idle = window.requestIdleCallback || (fn => setTimeout(fn, 1));
+  setTimeout(() => idle(async () => {
+    try {
+      await loadAR().then(m => m.loadMindAR());
+      for (const e of state.collection) {
+        try { const art = await openArtwork(e); await getTarget(targetKeyOf(e), art); } catch (err) { console.warn('warm', err); }
+        await new Promise(r => idle(r));
+      }
+    } catch (err) { console.warn('AR warm-up skipped', err); }
+  }, { timeout: 4000 }), 2500);
 }
 
 // ================================================================ rendering
@@ -379,6 +383,7 @@ async function openDetail(e) {
         <button class="chip" data-d="replay">↻ Replay</button>
         <button class="chip" data-d="3d">${svgIcon('cube')}See it in 3D</button>
         <button class="chip" data-d="cert">✦ Certificate</button>
+        ${overlaysOf(m).length > 1 ? `<button class="chip" data-d="ar">${svgIcon('ar')}${overlaysOf(m).length} AR overlays · swipe in AR</button>` : ''}
       </div>
       <div class="panel" id="cert-panel">
         <div class="panel-head"><span class="seal">✦</span>Certificate of authenticity${c ? (e.verified ? '<span class="ok">✓ Verified</span>' : '<span class="bad">Not verified</span>') : ''}</div>
@@ -590,6 +595,7 @@ async function runUnlock(input) {
     ring.style.setProperty('--p', 100);
     requestPersistence();
     if (!already) acct.changed();
+    await syncEntry(entry);   // pick up overlays the artist added after this poster was unlocked
     const art = await openArtwork(entry);
     await thumbURL(entry);
     await sleep(350);
@@ -816,7 +822,7 @@ async function showMarket() {
 }
 
 // ================================================================ legal
-function openLegal(which) { openSheet(which === 'privacy' ? privacyHTML() : termsHTML()); }
+async function openLegal(which) { const { privacyHTML, termsHTML } = await loadLegal(); openSheet(which === 'privacy' ? privacyHTML() : termsHTML()); }
 
 // ================================================================ backup sheet
 async function openBackup() {
@@ -869,8 +875,7 @@ async function openAR(entry) {
   cap.classList.remove('on');
   $('#ar-help').hidden = true; $$('.ar-gate', view).forEach(g => g.remove());
   scan.classList.remove('on');
-  let mode = localStorage.getItem('gh-ar-mode') || 'fit';
-  const modeBtn = $('#ar-mode'); modeBtn.setAttribute('aria-pressed', mode === 'pin');
+  $('#ar-overlays').hidden = true; $('#ar-swipehint').classList.remove('on');
   pushLayer('ar', fromPop => closeAR(fromPop));
 
   const gate = (title, text, retry = true) => {
@@ -895,14 +900,18 @@ async function openAR(entry) {
     if (openAR.token !== token || view.hidden) return;
     setStatus('Starting camera…');
     const topbar = $('.ar-top').getBoundingClientRect().bottom;
+    const ovKey = `ex-ov-${entry.id}`;
+    const startOv = Math.max(0, art.overlays.findIndex(o => o.id === localStorage.getItem(ovKey)));
     const session = await ar.startAR({
-      mount: $('#ar-mount'), art: { meta: m, ...art }, targetSrc, mode,
-      padding: { top: topbar + 14, bottom: 84, left: 18, right: 18 },
-      onFound: () => { scan.classList.remove('on'); cap.classList.add('on'); },
+      mount: $('#ar-mount'), art: { meta: entry.meta, ...art }, targetSrc, overlay: startOv,
+      onFound: () => { scan.classList.remove('on'); cap.classList.add('on'); showOverlayBar(true); },
       onLost: () => { msg.textContent = 'Find the poster again'; scan.classList.add('on'); cap.classList.remove('on'); },
+      onOverlay: (i, ov) => { paintOverlayBar(i); try { localStorage.setItem(ovKey, ov.id); } catch {} },
+      onOverlayError: () => toast('That overlay couldn\'t load. Check your connection and try again.'),
     });
     if (openAR.token !== token || view.hidden) { session.stop(); return; }
     arSession = session;
+    paintOverlayBar(session.overlay);
     setStatus(''); msg.textContent = 'Fit the whole poster in the frame'; scan.classList.add('on');
   } catch (e) {
     console.error(e); off();
@@ -915,15 +924,37 @@ async function openAR(entry) {
     else gate('Something went wrong', `We couldn't start AR (${String(e?.message || e?.name || 'unknown error').slice(0, 120)}). Try again, or restart the app.`);
   }
 }
-function toggleARMode() {
-  const next = (arSession?.mode || localStorage.getItem('gh-ar-mode') || 'fit') === 'fit' ? 'pin' : 'fit';
-  localStorage.setItem('gh-ar-mode', next);
-  arSession?.setMode(next);
-  $('#ar-mode').setAttribute('aria-pressed', next === 'pin');
-  let pill = $('.ar-modepill'); if (!pill) { pill = document.createElement('div'); pill.className = 'ar-modepill'; $('#ar-view').appendChild(pill); }
-  pill.textContent = next === 'pin' ? 'Pinned to the poster' : 'Fit to screen';
-  pill.classList.add('on'); clearTimeout(pill.t); pill.t = setTimeout(() => pill.classList.remove('on'), 1600);
+// ---------- AR overlays: name, dots, arrows and swipe ----------
+function paintOverlayBar(i) {
+  const list = arSession?.overlays || []; const bar = $('#ar-overlays');
+  if (list.length < 2) { bar.hidden = true; return; }
+  $('#ar-ov-title').textContent = list[i]?.title || '';
+  $('#ar-dots').innerHTML = list.map((o, k) => `<button role="tab" aria-selected="${k === i}" aria-label="${esc(o.title)}" data-ov="${k}"></button>`).join('');
 }
+function showOverlayBar(found) {
+  const list = arSession?.overlays || []; if (list.length < 2) return;
+  const bar = $('#ar-overlays'); bar.hidden = false; requestAnimationFrame(() => bar.classList.add('on'));
+  if (found && !localStorage.getItem('ex-ar-swiped')) { const h = $('#ar-swipehint'); h.classList.add('on'); clearTimeout(h.t); h.t = setTimeout(() => h.classList.remove('on'), 3200); }
+}
+function switchOverlay(dir) {
+  if (!arSession || (arSession.overlays?.length || 0) < 2) return;
+  dir > 0 ? arSession.next() : arSession.prev();
+  try { localStorage.setItem('ex-ar-swiped', '1'); } catch {}
+  $('#ar-swipehint').classList.remove('on');
+  const t = $('#ar-ov-title'); t.classList.remove('swap'); void t.offsetWidth; t.classList.add('swap');
+}
+(() => {
+  const view = $('#ar-view'); let sx = 0, sy = 0, st = 0, tracking = false;
+  view.addEventListener('pointerdown', e => { if (e.target.closest('button, .ar-help, .ar-gate')) return; tracking = true; sx = e.clientX; sy = e.clientY; st = performance.now(); });
+  view.addEventListener('pointerup', e => {
+    if (!tracking) return; tracking = false;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4 && performance.now() - st < 900) switchOverlay(dx < 0 ? 1 : -1);
+  });
+  view.addEventListener('pointercancel', () => { tracking = false; });
+  $('#ar-dots').addEventListener('click', e => { const d = e.target.closest('[data-ov]'); if (d && arSession) arSession.setOverlay(Number(d.dataset.ov)); });
+  addEventListener('keydown', e => { if (view.hidden) return; if (e.key === 'ArrowRight') switchOverlay(1); if (e.key === 'ArrowLeft') switchOverlay(-1); });
+})();
 function closeAR(fromPop = false) {
   const view = $('#ar-view'); if (view.hidden) return;
   openAR.token = null;
@@ -931,6 +962,7 @@ function closeAR(fromPop = false) {
   arSession?.stop(); arSession = null;
   $('#ar-mount').innerHTML = ''; view.hidden = true;
   $('#ar-scan').classList.remove('on'); $('#ar-status').classList.remove('on'); $('#ar-caption').classList.remove('on');
+  $('#ar-overlays').classList.remove('on'); $('#ar-overlays').hidden = true; $('#ar-swipehint').classList.remove('on');
   if ($('#sheet').hidden && $('#ceremony').hidden && !state.room) document.body.classList.remove('locked');
   if (state.view === 'home' && !state.room) state.heroPreview?.resume();
   if ($('#sheet').hidden) state.room?.resume();
@@ -962,11 +994,15 @@ function doReload() { if (busy()) { pendingReload = true; return; } toast('<span
 function initServiceWorker() {
   if (!('serviceWorker' in navigator) || !window.isSecureContext) return;
   const hadController = !!navigator.serviceWorker.controller;
-  navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
+  // first visit: register after the page has loaded and gone quiet, so caching never slows the first paint
+  const go = () => navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
     const check = () => reg.update().catch(() => {});
     setInterval(check, 30 * 60 * 1000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
   }).catch(e => console.warn('sw', e));
+  if (hadController) go();
+  else if (document.readyState === 'complete') setTimeout(go, 3000);
+  else addEventListener('load', () => setTimeout(go, 3000), { once: true });
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (!hadController || reloading) return; reloading = true; doReload(); });
   // re-check sheets/overlays closing for a deferred reload
@@ -1001,7 +1037,8 @@ document.addEventListener('click', e => {
   if (act === 'backup') openBackup();
   if (act === 'close-sheet') closeSheet();
   if (act === 'close-ar') closeAR();
-  if (act === 'ar-mode') toggleARMode();
+  if (act === 'ar-next') switchOverlay(1);
+  if (act === 'ar-prev') switchOverlay(-1);
   if (act === 'ar-help') $('#ar-help').hidden = !$('#ar-help').hidden;
 });
 document.addEventListener('keydown', e => {
@@ -1077,7 +1114,7 @@ let pendingUnlock = null, pendingNfc = null, pendingJoin = null;
   fetch('version.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(v => { if (v?.version) $('#foot-version').textContent = `v${v.version}`; }).catch(() => {});
   await runSplash({ landing: !pendingUnlock && !pendingNfc && !pendingJoin });
   // accounts: everyone signs up, or signs in by scanning a QR code from another device
-  initAccountUI({ toast, esc, svgIcon, openSheet, closeSheet, qrToCanvas, loadScanner, openLegal, openBackup: () => openBackup(),
+  initAccountUI({ toast, esc, svgIcon, openSheet, closeSheet, loadQR, loadScanner, openLegal, openBackup: () => openBackup(),
     stats: () => ({ posters: state.collection.length, liked: (JSON.parse(localStorage.getItem('ex-favs') || '[]')).length }) });
   acct.on('profile', paintAvatar);
   acct.on('collection', async ({ added }) => { await renderCollection(); toast(`✦ ${added} poster${added === 1 ? '' : 's'} synced from your account`); });
@@ -1085,6 +1122,8 @@ let pendingUnlock = null, pendingNfc = null, pendingJoin = null;
   if (pendingJoin && acct.signedIn()) { await ensureAccount(); handleAccountLink(pendingJoin); }
   else await ensureAccount({ joinSecret: pendingJoin ? acct.secretFrom(pendingJoin) : null, joinCode: pendingJoin ? acct.codeFrom(pendingJoin) : null });
   paintAvatar();
+  renderTrending($('#trend-grid'), $('#trend-chips'), marketCtx()).catch(() => {});
+  renderArtistStrip($('#home-artists'), marketCtx()).catch(() => {});
   const contact = mountContact({ toast });
   document.getElementById('tabbar')?.appendChild(document.getElementById('contact'));
   contact.show();
@@ -1096,10 +1135,11 @@ let pendingUnlock = null, pendingNfc = null, pendingJoin = null;
     for (const c of creds) { try { await unlock(`${c.id}.${c.edition}.${c.code}`); } catch {} }
     await renderCollection();
   }
-  renderTrending($('#trend-grid'), $('#trend-chips'), marketCtx()).catch(() => {});
-  renderArtistStrip($('#home-artists'), marketCtx()).catch(() => {});
   if (pendingNfc) { setView('home'); runPreview(pendingNfc); }
   else if (pendingUnlock) runUnlock(pendingUnlock);
   else setView({ '#my-posters': 'mine', '#marketplace': 'market', '#artists': 'artists' }[location.hash] || 'home');
   if (legalHash) openLegal(legalHash);
+  warmAR();
+  // owned posters pick up overlays/details the artist added later
+  Promise.all(state.collection.map(e => syncEntry(e))).catch(() => {});
 })();

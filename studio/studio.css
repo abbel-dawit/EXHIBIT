@@ -48,3 +48,9 @@ details[open].create summary::before { content: "− "; }
   .qr-card .code { font-family: Menlo, monospace; font-size: 8.5pt; letter-spacing: .04em; margin-top: 2mm; }
   .qr-card .how { font-size: 7.5pt; color: #666; margin-top: 2mm; font-family: Helvetica, Arial, sans-serif; }
 }
+
+.ov-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+.ov-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgb(var(--tint) / .05); box-shadow: inset 0 0 0 1px var(--line); }
+.ov-kind { font-size: 12px; font-weight: 600; color: var(--cream-2); white-space: nowrap; }
+.ov-row input { min-width: 0; border: 0; background: transparent; font: 600 15px var(--sans); color: var(--cream); padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.ov-tools { display: flex; gap: 6px; }

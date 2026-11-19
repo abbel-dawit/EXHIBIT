@@ -101,6 +101,7 @@ async function renderMain() {
           <button class="btn btn-gold" data-editions="${a.id}">Editions & QR</button>
           <button class="btn btn-ghost" data-nft="${a.id}">NFT</button>
           <button class="btn btn-ghost" data-nfc="${a.id}">NFC tag</button>
+          <button class="btn btn-ghost" data-ov="${a.id}">AR overlays</button>
         </div>
       </div></div>`).join('')
     : `<div class="empty-state"><h3>No artworks yet</h3><p>Add your first artwork. You'll choose its animation, set how many posters you're selling, and get a unique QR code for each one.</p><button class="btn btn-gold btn-lg" data-act="add">+ Add artwork</button></div>`;
@@ -366,6 +367,64 @@ function printCards(id) {
   setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('printing'), 500); }, 300);
 }
 
+// ---------------- AR overlays (collectors swipe between them in AR) ----------------
+function overlayList(a) {
+  if (a.meta.overlays?.length) return a.meta.overlays.map(o => ({ ...o }));
+  return [a.meta.effect === 'video' ? { id: 'main', kind: 'legacy-video', title: 'Artist video' } : { id: 'main', kind: 'effect', effect: a.meta.effect || 'auto', preset: a.meta.preset || null, title: 'Living edition' }];
+}
+function openOverlays(id) {
+  const a = vault.artworks[id];
+  let list = overlayList(a);
+  const pendingVideos = new Map();   // overlay id → { bytes, mime }
+  const render = body => {
+    $('#ov-list', body).innerHTML = list.map((o, i) => `<li class="ov-row">
+        <span class="ov-kind">${o.kind === 'effect' ? '✦ Animation' : '▶ Video'}</span>
+        <input type="text" value="${esc(o.title)}" data-ov-title="${i}" maxlength="32" aria-label="Overlay name">
+        <span class="ov-tools">
+          <button class="btn btn-ghost btn-small" data-ov-up="${i}" ${i === 0 ? 'disabled' : ''} aria-label="Move up">↑</button>
+          <button class="btn btn-ghost btn-small" data-ov-del="${i}" ${list.length === 1 ? 'disabled' : ''} aria-label="Remove">✕</button>
+        </span></li>`).join('');
+  };
+  const html = `<div class="create-head"><div class="eyebrow">AR overlays</div><h2>${esc(a.meta.title)}</h2>
+      <p>Collectors <b>swipe left or right in AR</b> to switch between these, in this order. Each overlay is locked onto the printed poster. Videos are encrypted like the artwork, so only owners (and NFC previews) can play them.</p></div>
+    <ul class="ov-list" id="ov-list"></ul>
+    <div class="btn-row" style="margin:12px 0">
+      <label class="btn btn-ghost">+ Add video overlay<input type="file" accept="video/mp4,video/quicktime,video/webm" id="ov-file" hidden></label>
+      ${list.some(o => o.kind === 'effect') ? '' : '<button class="btn btn-ghost" data-ov-anim>+ Add living animation</button>'}
+    </div>
+    <p class="help">Tip: export videos as MP4 (H.264), about the same shape as the poster, under ~10 MB. They play muted and loop.</p>
+    <div class="btn-row" style="margin-top:14px"><button class="btn btn-gold" id="ov-save">Save overlays</button></div>
+    <p class="help" id="ov-status"></p>`;
+  openSheet(html, body => {
+    render(body);
+    body.addEventListener('input', e => { const t = e.target.closest('[data-ov-title]'); if (t) list[Number(t.dataset.ovTitle)].title = t.value; });
+    body.addEventListener('click', async e => {
+      const up = e.target.closest('[data-ov-up]'); if (up) { const i = Number(up.dataset.ovUp); [list[i - 1], list[i]] = [list[i], list[i - 1]]; return render(body); }
+      const del = e.target.closest('[data-ov-del]'); if (del) { list.splice(Number(del.dataset.ovDel), 1); return render(body); }
+      if (e.target.closest('[data-ov-anim]')) { list.push({ id: 'living', kind: 'effect', effect: a.meta.effect === 'video' ? 'auto' : a.meta.effect, title: 'Living edition' }); return render(body); }
+    });
+    $('#ov-file', body).addEventListener('change', async e => {
+      const f = e.target.files[0]; if (!f) return;
+      if (f.size > 25e6) { toast('That video is over 25 MB. Please export a smaller file.'); return; }
+      const oid = 'video-' + Date.now().toString(36);
+      pendingVideos.set(oid, { bytes: new Uint8Array(await f.arrayBuffer()), mime: f.type || 'video/mp4' });
+      list.push({ id: oid, kind: 'video', title: f.name.replace(/\.[^.]+$/, '').slice(0, 32) || 'Video' });
+      render(body); e.target.value = '';
+    });
+    $('#ov-save', body).addEventListener('click', async () => {
+      const st = $('#ov-status', body), btn = $('#ov-save', body); btn.disabled = true; st.textContent = 'Encrypting…';
+      try {
+        if (list.some(o => o.kind === 'legacy-video')) { st.textContent = 'This artwork\'s video is its main animation. Edit the artwork to change it.'; btn.disabled = false; return; }
+        const overlays = list.map(o => o.kind === 'video' ? { id: o.id, kind: 'video', title: o.title, ...(pendingVideos.get(o.id) || {}) } : { id: o.id, kind: 'effect', effect: o.effect, preset: o.preset, title: o.title });
+        const res = await upsertArtwork(vault, { ...a.meta, id, editionsTotal: a.editionsTotal, publicTitle: a.publicTitle, overlays });
+        for (const [path, bytes] of Object.entries(res.files)) await sdb.put('files', path, bytes);
+        markPending(Object.keys(res.files), res.removed); await saveVault();
+        closeSheet(); toast(`✓ ${list.length} overlay${list.length === 1 ? '' : 's'} saved. Publish to make them live.`); renderMain();
+      } catch (err) { console.error(err); st.textContent = 'Error: ' + err.message; btn.disabled = false; }
+    });
+  });
+}
+
 // ---------------- NFC tags (temporary previews) ----------------
 async function openNFC(id) {
   const a = vault.artworks[id];
@@ -500,8 +559,9 @@ async function publishGitHub() {
 
 // ---------------- events ----------------
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-act],[data-edit],[data-editions],[data-nft],[data-nfc]'); if (!t) return;
+  const t = e.target.closest('[data-act],[data-edit],[data-editions],[data-nft],[data-nfc],[data-ov]'); if (!t) return;
   if (t.dataset.nfc) return openNFC(t.dataset.nfc);
+  if (t.dataset.ov) return openOverlays(t.dataset.ov);
   if (t.dataset.edit) return openEditor(t.dataset.edit);
   if (t.dataset.editions) return openEditions(t.dataset.editions);
   if (t.dataset.nft) return openNFT(t.dataset.nft);

@@ -30,3 +30,23 @@ export async function createEffect(THREE, art, opts = {}) {
   fx.aspect = art.meta.effect === 'golden-hour' ? 820 / 1179 : aspect;
   return fx;
 }
+
+/**
+ * One AR overlay of an artwork (see overlaysOf in gallery.js):
+ *   { kind: 'effect', effect, preset } → animated living poster
+ *   { kind: 'video', file, mime }      → the artist's video, cover-fitted to the poster
+ */
+export async function createOverlayEffect(THREE, art, ov, opts = {}) {
+  if (ov?.kind === 'video') {
+    const url = (await art.videoURL?.(ov.file, ov.mime)) || (ov.file === 'overlay' ? art.overlayURL : null);
+    if (!url) throw new Error('This overlay video is missing.');
+    let aspect = 820 / 1179;
+    if (art.meta.effect !== 'golden-hour') { const img = opts.image || await loadImage(art.imageURL); aspect = img.naturalHeight / img.naturalWidth; }
+    const fx = createVideoPoster(THREE, makeVideo(url), aspect);
+    fx.aspect = aspect; fx.kind = 'video';
+    return fx;
+  }
+  const fx = await createEffect(THREE, { ...art, meta: { ...art.meta, effect: ov?.effect || art.meta.effect, preset: ov?.preset ?? art.meta.preset } }, opts);
+  fx.kind = 'effect';
+  return fx;
+}

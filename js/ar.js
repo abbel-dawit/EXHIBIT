@@ -1,12 +1,11 @@
-// AR session: camera + MindAR tracking + the artwork's animation.
+// AR session: camera + MindAR image tracking + the artwork's overlays.
 //
-// Two display modes:
-//   'fit' (default): once the poster is recognised, the animated artwork is shown fitted to the screen
-//                     with padding, always fully visible and sharp, while it tilts, drifts and scales
-//                     with the poster's real position, so it still moves with you.
-//   'pin':           classic AR: the animation is locked exactly onto the printed poster.
+// Overlays are always ANCHORED to the printed poster: they're children of MindAR's anchor, so they
+// move, tilt and scale with the real poster as you walk around it, and disappear when it leaves
+// the camera. An artwork can have several overlays (e.g. its living animation and the artist's
+// video); setOverlay / next / prev switch between them with a quick cross-fade.
 import * as THREE from 'three';
-import { createEffect } from './effects/index.js';
+import { createOverlayEffect } from './effects/index.js';
 
 let MindARThreePromise = null;
 export function loadMindAR() {
@@ -15,61 +14,62 @@ export function loadMindAR() {
   return MindARThreePromise;
 }
 
-const OVERLAY_OPACITY = 0.86;   // the printed poster stays slightly visible behind
-const MAX_TILT = THREE.MathUtils.degToRad(24);
-const LOST_GRACE = 1.2;         // seconds the overlay holds after tracking is lost
+// MindAR smooths the tracked pose with a One-Euro filter. minCF = steadiness when still,
+// beta = how quickly it catches up when the phone moves. Higher beta keeps the overlay stuck to the
+// poster during movement (very low beta made it drift behind); minCF keeps it calm when still.
+const TRACKING = { filterMinCF: 0.0008, filterBeta: 25, warmupTolerance: 4, missTolerance: 6 };
+const HOLD = 0.35;              // seconds an overlay stays after a brief tracking miss (hides flicker)
+const OPACITY = { effect: 0.96, video: 1 };
 
 /**
- * opts: { mount, art: {meta, imageURL, overlayURL}, targetSrc, mode, padding: {top,right,bottom,left} px,
- *         onFound, onLost }
- * Returns { stop(), setMode(mode), mode }
+ * opts: { mount, art: {meta, imageURL, overlayURL, overlays, videoURL}, targetSrc, overlay: start index,
+ *         onFound, onLost, onOverlay(index, overlay), onOverlayError(index, error) }
+ * Returns { stop(), next(), prev(), setOverlay(i), overlay, overlays }
  */
-export async function startAR({ mount, art, targetSrc, mode = 'fit', padding = {}, onFound, onLost }) {
+export async function startAR({ mount, art, targetSrc, overlay = 0, onFound, onLost, onOverlay, onOverlayError }) {
   const MindARThree = await loadMindAR();
   const container = document.createElement('div');
   container.className = 'ar-stage';
   mount.appendChild(container);
 
-  const mindar = new MindARThree({
-    container, imageTargetSrc: targetSrc, maxTrack: 1,
-    uiLoading: 'no', uiScanning: 'no', uiError: 'no',
-    filterMinCF: 0.0001, filterBeta: 0.001, warmupTolerance: 3, missTolerance: 8,
-  });
+  const mindar = new MindARThree({ container, imageTargetSrc: targetSrc, maxTrack: 1, uiLoading: 'no', uiScanning: 'no', uiError: 'no', ...TRACKING });
   const { renderer, scene, camera } = mindar;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const anchor = mindar.addAnchor(0);   // 1 unit = the poster's width, centred on the poster
 
-  const effect = await createEffect(THREE, art);
-  effect.setOpacity(0);
-  const anchor = mindar.addAnchor(0);
-
-  // fit-mode scene: its own camera, the artwork sits in a rig that copies (damped) the poster's motion
-  const fitScene = new THREE.Scene();
-  const fitCam = new THREE.PerspectiveCamera(32, 1, 0.01, 100);
-  const rig = new THREE.Group(); fitScene.add(rig);
-
-  let currentMode = mode;
-  const place = () => {
-    effect.group.removeFromParent();
-    effect.group.position.set(0, 0, currentMode === 'pin' ? 0.002 : 0);
-    effect.group.quaternion.identity(); effect.group.scale.setScalar(1);
-    (currentMode === 'pin' ? anchor.group : rig).add(effect.group);
+  const overlays = art.overlays?.length ? art.overlays : [{ kind: 'effect', effect: art.meta.effect, title: 'Living edition' }];
+  const fx = new Map();                 // index → effect (built on first use, kept for quick switching)
+  const fade = new Map();               // index → 0..1
+  let current = Math.max(0, Math.min(overlays.length - 1, overlay | 0));
+  let image = null;
+  const build = async i => {
+    if (fx.has(i)) return fx.get(i);
+    const p = (async () => {
+      image = image || await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = art.imageURL; });
+      const e = await createOverlayEffect(THREE, art, overlays[i], { image });
+      e.setOpacity(0); e.group.position.set(0, 0, 0.002 + i * 0.0005);
+      anchor.group.add(e.group);
+      return e;
+    })();
+    fx.set(i, p); fade.set(i, 0);
+    return p.catch(err => { fx.delete(i); throw err; });
   };
-  place();
+  const ready = new Map();              // index → effect once built
+  const ensure = i => build(i).then(e => { ready.set(i, e); return e; });
 
-  // tracking state
   const now = () => performance.now() / 1000;
   let tracking = false, lostAt = -1, everFound = false, goneSince = now();
-  let fade = 0;                                  // 0..1 visibility
-  const pose = { pos: new THREE.Vector3(), quat: new THREE.Quaternion(), scale: new THREE.Vector3() };
-  const smoothQ = new THREE.Quaternion(), targetQ = new THREE.Quaternion(), ident = new THREE.Quaternion();
-  const smoothOff = new THREE.Vector2(), smoothZoom = { v: 1 };
-  const ndc = new THREE.Vector3();
 
+  try { await ensure(current); } catch (e) { container.remove(); throw e; }
+
+  function show(i, { reveal = false } = {}) {
+    const e = ready.get(i); if (!e) return;
+    if (reveal) e.reveal(now()); else e.play?.();
+  }
   anchor.onTargetFound = () => {
     tracking = true;
-    if (!everFound || now() - goneSince > 4) effect.reveal(now());   // full reveal only on a fresh find
+    if (!everFound || now() - goneSince > 4) show(current, { reveal: true }); else show(current);
     everFound = true;
-    effect.play?.();
     try { navigator.vibrate?.(18); } catch {}
     onFound?.();
   };
@@ -78,83 +78,64 @@ export async function startAR({ mount, art, targetSrc, mode = 'fit', padding = {
   try { await mindar.start(); }
   catch (e) { cleanup(); throw e; }
 
-  function layoutFit() {
-    const el = renderer.domElement;
-    const w = el.clientWidth || innerWidth, h = el.clientHeight || innerHeight;
-    fitCam.aspect = w / h;
-    // usable area after padding
-    const pt = padding.top ?? 84, pb = padding.bottom ?? 96, pl = padding.left ?? 20, pr = padding.right ?? 20;
-    const fw = Math.max(0.3, (w - pl - pr) / w), fh = Math.max(0.3, (h - pt - pb) / h);
-    const tan = Math.tan(THREE.MathUtils.degToRad(fitCam.fov / 2));
-    const a = effect.aspect, margin = 1.1;      // a little extra room for the tilt
-    const dist = Math.max((a * margin) / (2 * tan * fh), (margin / fitCam.aspect) / (2 * tan * fw));
-    // shift the camera so the padded area (not the whole screen) is centred
-    const cy = ((pt - pb) / 2) / h * 2 * tan * dist;
-    const cx = ((pr - pl) / 2) / w * 2 * tan * dist * fitCam.aspect;
-    fitCam.position.set(cx, cy, dist);
-    fitCam.lookAt(cx, cy, 0);
-    fitCam.updateProjectionMatrix();
-    return { dist, tan, fw, fh };
-  }
-
-  function updateFit(dt) {
-    const L = layoutFit();
-    if (tracking) {
-      anchor.group.matrix.decompose(pose.pos, pose.quat, pose.scale);
-      // tilt: follow the poster's orientation, damped and clamped so it stays readable
-      targetQ.copy(ident).slerp(pose.quat, 0.6);
-      const ang = 2 * Math.acos(Math.min(1, Math.abs(targetQ.w)));
-      if (ang > MAX_TILT) targetQ.copy(ident).slerp(targetQ, MAX_TILT / ang);
-      // drift: lean toward where the poster is on screen (but never off screen)
-      ndc.copy(pose.pos).project(camera);
-      const visW = 2 * L.tan * L.dist * fitCam.aspect, visH = 2 * L.tan * L.dist;
-      const slackX = Math.max(0, (visW * L.fw - 1 * 1.1) / 2), slackY = Math.max(0, (visH * L.fh - effect.aspect * 1.1) / 2);
-      const ox = THREE.MathUtils.clamp(ndc.x * visW * 0.08, -slackX - 0.03, slackX + 0.03);
-      const oy = THREE.MathUtils.clamp(ndc.y * visH * 0.08, -slackY - 0.03, slackY + 0.03);
-      // zoom: a gentle push-in as you walk closer
-      const apparent = THREE.MathUtils.clamp(pose.scale.x / Math.max(1e-3, -pose.pos.z) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect), 0, 1.5);
-      const zoom = 0.94 + 0.06 * Math.min(1, apparent);
-      const k = 1 - Math.pow(0.0015, dt);          // frame-rate independent smoothing
-      smoothQ.slerp(targetQ, k);
-      smoothOff.x += (ox - smoothOff.x) * k; smoothOff.y += (oy - smoothOff.y) * k;
-      smoothZoom.v += (zoom - smoothZoom.v) * k;
-    } else {
-      // ease back to centre while holding
-      const k = 1 - Math.pow(0.05, dt);
-      smoothQ.slerp(ident, k); smoothOff.multiplyScalar(1 - k);
+  let switchId = 0;
+  async function setOverlay(i) {
+    const n = overlays.length; i = ((i % n) + n) % n;
+    if (i === current) return current;
+    const id = ++switchId;
+    current = i; onOverlay?.(i, overlays[i]);
+    try {
+      const e = await ensure(i);
+      if (id !== switchId) return current;
+      if (tracking) e.reveal(now());
+    } catch (err) {
+      console.warn('overlay', err); onOverlayError?.(i, err);
     }
-    rig.quaternion.copy(smoothQ);
-    rig.position.set(smoothOff.x, smoothOff.y, 0);
-    rig.scale.setScalar(smoothZoom.v);
+    return current;
   }
 
   let last = now();
   const loop = () => {
     const t = now(), dt = Math.min(0.1, t - last); last = t;
-    const visible = tracking || (lostAt > 0 && t - lostAt < LOST_GRACE && currentMode === 'fit');
-    if (!visible && fade === 0) goneSince = t;
-    fade += ((visible ? 1 : 0) - fade) * (1 - Math.pow(visible ? 0.02 : 0.0005, dt));
-    if (fade < 0.01 && !visible) { fade = 0; effect.pause?.(); }
-    effect.setOpacity(OVERLAY_OPACITY * fade);
-    effect.setViewportHeight(renderer.domElement.height);
-    effect.update(t);
-    if (currentMode === 'fit') { updateFit(dt); renderer.render(fitScene, fitCam); }
-    else renderer.render(scene, camera);
+    const visible = tracking || (lostAt > 0 && t - lostAt < HOLD);
+    if (!visible && [...fade.values()].every(v => v === 0)) goneSince = t;
+    for (const [i, e] of ready) {
+      const want = visible && i === current ? 1 : 0;
+      let f = fade.get(i) || 0;
+      f += (want - f) * (1 - Math.pow(want ? 0.004 : 0.0008, dt));   // quick in, quicker out
+      if (f < 0.01 && !want) { f = 0; if (!e.group.visible) {} e.pause?.(); }
+      fade.set(i, f);
+      e.group.visible = f > 0;
+      if (f > 0) {
+        e.setOpacity((OPACITY[e.kind] ?? 0.96) * f);
+        e.setViewportHeight(renderer.domElement.height);
+        e.update(t);
+      }
+    }
+    renderer.render(scene, camera);
   };
   renderer.setAnimationLoop(loop);
-  const onVis = () => renderer.setAnimationLoop(document.hidden ? null : loop);
+  const onVis = () => {
+    renderer.setAnimationLoop(document.hidden ? null : loop);
+    if (document.hidden) for (const e of ready.values()) e.pause?.();
+    else if (tracking) ready.get(current)?.play?.();
+  };
   document.addEventListener('visibilitychange', onVis);
+  // warm the next overlay in the background so the first swipe is instant
+  if (overlays.length > 1) setTimeout(() => { if (!stopped) ensure((current + 1) % overlays.length).catch(() => {}); }, 1500);
 
   let stopped = false;
   function cleanup() {
     try { renderer.setAnimationLoop(null); } catch {}
-    try { effect.dispose?.(); } catch {}
+    for (const e of ready.values()) { try { e.dispose?.(); } catch {} }
     try { renderer.dispose(); renderer.forceContextLoss?.(); } catch {}
     container.remove();
   }
   return {
-    get mode() { return currentMode; },
-    setMode(m) { currentMode = m; place(); },
+    overlays,
+    get overlay() { return current; },
+    setOverlay, next: () => setOverlay(current + 1), prev: () => setOverlay(current - 1),
+    get mode() { return 'pin'; }, setMode() {},
     stop() {
       if (stopped) return; stopped = true;
       document.removeEventListener('visibilitychange', onVis);

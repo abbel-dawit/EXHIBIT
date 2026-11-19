@@ -111,6 +111,28 @@ function textTexture(lines, { w = 512, h = 256, bg = '#fbfaf7', pad = 34 } = {})
     }
   });
 }
+// Entrance wall: the EXHIBIT logo (white mark on Golden Hour sky pink) above the title.
+const LOGO_PATHS = ['M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3', 'M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 13v3h3'];
+export function wallTitleTexture(hooks) {
+  return canvas(1024, 512, (g, w) => {
+    const cx = w / 2, cy = 92, r = 74;
+    g.save(); g.shadowColor = 'rgba(200,120,90,.35)'; g.shadowBlur = 26; g.shadowOffsetY = 10;
+    const gr = g.createLinearGradient(cx - r, cy - r, cx + r, cy + r); gr.addColorStop(0, '#ebb7a0'); gr.addColorStop(1, '#dc9a84');
+    g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill(); g.restore();
+    g.save(); const k = 3.9; g.translate(cx - 12 * k, cy - 12 * k); g.scale(k, k);
+    g.strokeStyle = '#fff8ef'; g.lineWidth = 2; g.lineCap = 'round'; g.lineJoin = 'round';
+    if (typeof Path2D === 'function') for (const d of LOGO_PATHS) g.stroke(new Path2D(d));
+    g.restore();
+    g.textAlign = 'center'; g.textBaseline = 'top'; g.fillStyle = '#2a2420';
+    let title = hooks.wallTitle || 'EXHIBIT', size = 112;
+    g.font = `800 ${size}px Inter, system-ui, sans-serif`; g.letterSpacing = hooks.wallTitle ? '0px' : '14px';
+    while (g.measureText(title).width > w - 60 && size > 50) { size -= 6; g.font = `800 ${size}px Inter, system-ui, sans-serif`; }
+    g.fillText(title, cx, 198);
+    g.font = '500 30px Inter, system-ui, sans-serif'; g.letterSpacing = '8px'; g.fillStyle = '#8a7d70';
+    g.fillText((hooks.wallSub || 'A private gallery of living art').toUpperCase(), cx, 340);
+  });
+}
+
 async function imageTexture(url, max = 1024) {
   const img = new Image(); img.crossOrigin = 'anonymous'; img.src = url; await img.decode();
   const pot = n => 2 ** Math.round(Math.log2(n));
@@ -236,7 +258,7 @@ function buildRoom(S, lay, pieces, textures) {
   for (const x of [-2.7, 2.7]) S.quad('white', [x, H - .01, zc], [.016, 0, 0], [0, 0, hl - .6], [.62, .6, .58, 1]);
   S.quad('white', [0, H - .01, zEnd + 1.6], [W / 2 - .6, 0, 0], [0, 0, .016], [.62, .6, .58, 1]);
   // wall lettering
-  S.quad('title', sum(walls.entry.at(0), [0, 2.55, 0], [0, 0, -.004]), [-1.6, 0, 0], [0, .4, 0], [1, 1, 1, 1], [0, 0, 1, 1], 'blend');
+  S.quad('title', sum(walls.entry.at(0), [0, 2.65, 0], [0, 0, -.004]), [-1.6, 0, 0], [0, .8, 0], [1, 1, 1, 1], [0, 0, 1, 1], 'blend');
 
   // artworks
   pieces.forEach((p, i) => {
@@ -331,10 +353,7 @@ export async function openGallery3D(pieces, hooks = {}) {
   // textures
   const lay = layout(pieces.length);
   const srcs = { white: TEX.white(), plaster: TEX.plaster(), oak: TEX.oak(), pool: TEX.pool(), disc: TEX.disc(), shadow: TEX.shadow(), ao: TEX.ao(),
-    title: textTexture([
-      { text: hooks.wallTitle || 'EXHIBIT', font: '800 112px Inter, system-ui, sans-serif', lh: 150, align: 'center', spacing: hooks.wallTitle ? '0px' : '20px', color: '#2a2420' },
-      { text: (hooks.wallSub || 'A private gallery of living art').toUpperCase(), font: '500 30px Inter, system-ui, sans-serif', lh: 40, align: 'center', spacing: '8px', color: '#8a7d70' },
-    ], { w: 1024, h: 256, bg: null, pad: 20 }) };
+    title: wallTitleTexture(hooks) };
   await Promise.all(pieces.map(async (p, i) => {
     try { const t = await imageTexture(p.imageURL); srcs[`art${i}`] = t.canvas; p.aspect = t.aspect; }
     catch { srcs[`art${i}`] = TEX.plaster(); p.aspect = .75; }

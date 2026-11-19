@@ -30,13 +30,26 @@ function networkFirst(req, cacheKey = req) {
   return new Promise(resolve => {
     let done = false;
     const fallback = () => caches.match(cacheKey, { ignoreSearch: true }).then(hit => hit || caches.match('./index.html'));
-    const timer = setTimeout(() => { if (!done) fallback().then(r => { if (r && !done) { done = true; resolve(r); } }); }, 3500);
+    const timer = setTimeout(() => { if (!done) fallback().then(r => { if (r && !done) { done = true; resolve(r); } }); }, 2500);
     fetch(req, { cache: 'no-cache' }).then(r => {
       if (r && r.ok) { const copy = r.clone(); caches.open(SHELL).then(c => c.put(cacheKey, copy)).catch(() => {}); }
       if (!done) { done = true; clearTimeout(timer); resolve(r); }
     }).catch(() => { if (!done) { fallback().then(r => { done = true; clearTimeout(timer); resolve(r || Response.error()); }); } });
   });
 }
+// Answer instantly from the saved copy and refresh it in the background (first visit: network).
+function staleWhileRevalidate(event, req, cacheName = SHELL) {
+  return caches.open(cacheName).then(async c => {
+    const hit = await c.match(req, { ignoreSearch: req.mode !== 'navigate' }) || (req.mode === 'navigate' ? await c.match('./index.html') : null);
+    const fresh = fetch(req, { cache: 'no-cache' }).then(r => { if (r && r.ok) c.put(req.mode === 'navigate' ? './index.html' : req, r.clone()).catch(() => {}); return r; });
+    if (hit) { event.waitUntil(fresh.catch(() => {})); return hit; }
+    return fresh.catch(() => caches.match('./index.html'));
+  });
+}
+// Deploys made by GitHub Actions stamp VERSION, and a new version swaps the whole app at once
+// (see the update flow in app.js), so the saved copy can be used straight away.
+const STAMPED = !VERSION.startsWith('__');
+
 function cacheFirst(req, cacheName) {
   return caches.open(cacheName).then(async c => {
     const hit = await c.match(req, { ignoreSearch: true }); if (hit) return hit;
@@ -55,7 +68,9 @@ self.addEventListener('fetch', event => {
   if (path.startsWith('studio/')) return;                      // studio always live from the network
   if (path.startsWith('art/')) return event.respondWith(cacheFirst(req, ART));            // encrypted, content-hashed
   if (path.startsWith('vendor/')) return event.respondWith(cacheFirst(req, SHELL));       // pinned libraries
+  if (/\.(jpe?g|png|webp|svg|woff2)$/i.test(path)) return event.respondWith(staleWhileRevalidate(event, req));   // images & fonts
+  if (/^(gallery|marketplace|version|precache)\.json$/.test(path)) return event.respondWith(networkFirst(req));   // live data
+  if (STAMPED) return event.respondWith(staleWhileRevalidate(event, req));                                         // app shell & code
   if (req.mode === 'navigate') return event.respondWith(networkFirst(req, './index.html'));
-  // app code, styles, gallery.json, icons, brand image…
   event.respondWith(networkFirst(req));
 });

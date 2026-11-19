@@ -64,7 +64,8 @@
    ],
    "category": "Portraits",
    "year": "2026",
-   "medium": "Archival matte print"
+   "medium": "Archival matte print",
+   "thumb": "market/thumbs/golden-hour.jpg"
   },
   {
    "id": "flowers-in-a-vase",
@@ -85,7 +86,8 @@
      "label": "A2 · 42 × 59.4 cm",
      "price": 2400
     }
-   ]
+   ],
+   "thumb": "market/thumbs/flowers.jpg"
   },
   {
    "id": "color-study",
@@ -106,7 +108,8 @@
      "label": "A3 · 29.7 × 42 cm",
      "price": 1500
     }
-   ]
+   ],
+   "thumb": "market/thumbs/color-study.jpg"
   },
   {
    "id": "mountain-pass",
@@ -127,7 +130,8 @@
      "label": "A2 · 59.4 × 42 cm",
      "price": 2300
     }
-   ]
+   ],
+   "thumb": "market/thumbs/mountain-pass.jpg"
   },
   {
    "id": "thrushes",
@@ -148,7 +152,8 @@
      "label": "A2 · 42 × 59.4 cm",
      "price": 2300
     }
-   ]
+   ],
+   "thumb": "market/thumbs/thrushes.jpg"
   }
  ]
 }

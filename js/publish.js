@@ -24,7 +24,10 @@ async function fileName(id, name, bytes) {
  * Create or update an artwork in the vault.
  * input: { id?, title, author, year, description, editionsTotal, effect: 'auto'|'video'|'golden-hour', preset,
  *          aspect, image: {bytes, mime}, overlay?: {bytes, mime} | null, target?: Uint8Array | null,
- *          teaser?: {bytes, mime} | null, publicTitle?: bool, nft?: {...}, contentHash?: hex of the original file }
+ *          teaser?: {bytes, mime} | null, publicTitle?: bool, nft?: {...}, contentHash?: hex of the original file,
+ *          overlays?: [ AR overlays collectors swipe between, in order:
+ *            { id, kind: 'effect', effect: 'golden-hour'|'auto', preset?, title }
+ *            { id, kind: 'video', title, bytes?, mime? }   (bytes only when the video is new or changed) ] }
  * Content (image/overlay/target) is only re-encrypted when supplied.
  * Returns { id, files: { path: Uint8Array }, removed: [paths] }
  */
@@ -52,6 +55,21 @@ export async function upsertArtwork(vault, input) {
   }
   if (input.overlay && input.effect === 'video') { await put('overlay', input.overlay.bytes); art.overlayMime = input.overlay.mime; }
   if (input.target) await put('target', input.target);
+  // extra AR overlays (each video is its own encrypted file: ov-<id>)
+  let overlays = null;
+  if (Array.isArray(input.overlays)) {
+    overlays = [];
+    for (const o of input.overlays) {
+      const oid = slugify(o.id || o.title || 'overlay').slice(0, 24) || 'overlay';
+      if (o.kind === 'video') {
+        const file = `ov-${oid}`;
+        if (o.bytes) { await put(file, o.bytes); art.ovMime = { ...(art.ovMime || {}), [file]: o.mime || 'video/mp4' }; }
+        if (!art.files[file]) continue;   // no video for this overlay
+        overlays.push({ id: oid, kind: 'video', title: o.title || 'Video', file, mime: art.ovMime?.[file] || 'video/mp4' });
+      } else overlays.push({ id: oid, kind: 'effect', effect: o.effect || 'auto', preset: o.preset || null, title: o.title || 'Living edition' });
+    }
+    for (const name of Object.keys(art.files)) if (name.startsWith('ov-') && !overlays.some(o => o.file === name)) { removed.push(art.files[name]); delete art.files[name]; }
+  } else overlays = art.meta?.overlays || null;
   if (input.teaser) {
     const path = `art/${id}/teaser.${hex(await sha256(input.teaser.bytes)).slice(0, 10)}.jpg`;
     if (art.teaser && art.teaser !== path) removed.push(art.teaser);
@@ -63,6 +81,7 @@ export async function upsertArtwork(vault, input) {
     title: input.title, author: input.author, year: input.year || '', description: input.description || '',
     effect: input.effect || 'auto', preset: input.preset || null, aspect: input.aspect || art.meta?.aspect || null,
     imageMime: art.imageMime, overlayMime: art.overlayMime || null, nft: 'nft' in input ? (input.nft || null) : (art.meta?.nft || null),
+    overlays: overlays && overlays.length ? overlays : null,
   };
   art.publicTitle = !!input.publicTitle;
   art.editionsTotal = Math.max(1, Number(input.editionsTotal) || art.editionsTotal || 1);

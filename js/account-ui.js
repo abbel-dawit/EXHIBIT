@@ -6,7 +6,7 @@ const LOGO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5a1 1 0 
 const CAM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
 export const avatarHTML = (p, cls = '') => p?.picture
-  ? `<span class="ex-avatar ${cls}" style="background-image:url('${p.picture}')"></span>`
+  ? `<span class="ex-avatar has-pic ${cls}"><img src="${p.picture}" alt="" decoding="async"></span>`
   : `<span class="ex-avatar ${cls} noimg">${initials(p?.name)}</span>`;
 const ago = t => { if (!t) return 'never'; const s = (Date.now() - t) / 1000; return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
 
@@ -195,7 +195,7 @@ export function openAccount({ showLink = false } = {}) {
         <p class="tip" style="margin:10px 0">On the new device, open EXHIBIT and choose <b>Sign in with QR code</b>, or scan this with its camera. <b>Only show it to devices you own:</b> anyone who scans it can open your account.</p>
         <div class="btn-row"><button class="btn btn-ghost" data-acct="copy">Copy link</button><button class="btn btn-ghost" data-acct="code">Get a code</button></div>
         <div class="acct-code" id="acct-code" hidden></div>`;
-      try { const c = H.qrToCanvas(url, { scale: 6, margin: 3, level: 'M' }); const cv = lb.querySelector('#acct-qr'); cv.replaceWith(c); c.id = 'acct-qr'; } catch (e) { console.warn(e); }
+      H.loadQR().then(({ qrToCanvas }) => { const c = qrToCanvas(url, { scale: 6, margin: 3, level: 'M' }); const cv = lb.querySelector('#acct-qr'); if (cv) { cv.replaceWith(c); c.id = 'acct-qr'; } }).catch(e => console.warn(e));
       acct.syncNow({ force: true });
     };
     if (showLink) showQR();

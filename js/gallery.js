@@ -141,7 +141,7 @@ export async function nfcPreview(input, onStep = () => {}) {
   };
 }
 
-const labelFor = n => ({ image: 'artwork', overlay: 'animation', target: 'recognition data' }[n] || n);
+const labelFor = n => ({ image: 'artwork', overlay: 'animation', target: 'recognition data' }[n] || (n.startsWith('ov-') ? 'AR video' : n));
 
 /** Fetch an encrypted file (from device storage if we already have it). */
 export async function fetchAsset(id, name, path, onP = () => {}) {
@@ -164,15 +164,53 @@ export async function fetchAsset(id, name, path, onP = () => {}) {
 // ---------- opening a collected artwork ----------
 const opened = new Map(); // entry.key -> { imageURL, overlayURL, targetBuffer }
 
+/** The AR overlays of an artwork, in swipe order. Older artworks have one (their main effect). */
+export function overlaysOf(meta) {
+  if (Array.isArray(meta?.overlays) && meta.overlays.length) return meta.overlays;
+  return [meta?.effect === 'video'
+    ? { id: 'main', kind: 'video', title: 'Living edition', file: 'overlay', mime: meta.overlayMime || 'video/mp4' }
+    : { id: 'main', kind: 'effect', effect: meta?.effect || 'auto', preset: meta?.preset || null, title: 'Living edition' }];
+}
+
+/**
+ * Artists can add overlays (or fix details) after a poster was unlocked. A collected entry keeps the
+ * file list from its unlock day, so refresh it from the current gallery: same artwork key, new files.
+ */
+export async function syncEntry(entry) {
+  if (!entry || entry.preview) return entry;
+  try {
+    const gallery = await loadGallery();
+    const art = (gallery.artworks || []).find(a => a.id === entry.id);
+    if (!art?.files?.meta || art.files.meta === entry.files?.meta) return entry;
+    const K = unb64(entry.K);
+    const meta = await decryptJSON(K, await fetchAsset(entry.id, 'meta', art.files.meta));
+    if (art.files.image !== entry.files?.image) delete entry.thumb;
+    entry.meta = meta; entry.files = { ...art.files };
+    await db.put('collection', entry.key, entry);
+    opened.delete(entry.key);
+  } catch (e) { console.warn('refresh artwork', e); }
+  return entry;
+}
+
 export async function openArtwork(entry) {
   if (opened.has(entry.key)) return opened.get(entry.key);
   const K = unb64(entry.K);
   const get = async name => entry.files[name] ? decryptBytes(K, await fetchAsset(entry.id, name, entry.files[name])) : null;
-  const [image, overlay, target] = await Promise.all([get('image'), get('overlay'), get('target')]);
+  const legacyVideo = entry.meta?.effect === 'video';
+  const [image, overlay, target] = await Promise.all([get('image'), legacyVideo ? get('overlay') : null, get('target')]);
+  const videoURLs = new Map();
   const res = {
     imageURL: URL.createObjectURL(new Blob([image], { type: entry.meta.imageMime || 'image/jpeg' })),
     overlayURL: overlay ? URL.createObjectURL(new Blob([overlay], { type: entry.meta.overlayMime || 'video/mp4' })) : null,
     targetBuffer: target ? target.buffer.slice(target.byteOffset, target.byteOffset + target.byteLength) : null,
+    overlays: overlaysOf(entry.meta),
+    /** Decrypt an overlay video only when it's first shown (they're the biggest files). */
+    async videoURL(file, mime = 'video/mp4') {
+      if (file === 'overlay' && res.overlayURL) return res.overlayURL;
+      if (!videoURLs.has(file)) videoURLs.set(file, get(file).then(b => b ? URL.createObjectURL(new Blob([b], { type: mime })) : null));
+      return videoURLs.get(file);
+    },
+    _videoURLs: videoURLs,
   };
   opened.set(entry.key, res);
   return res;
@@ -183,6 +221,7 @@ export function closeArtwork(key) {
   const r = opened.get(key); if (!r) return;
   opened.delete(key);
   for (const u of [r.imageURL, r.overlayURL]) if (u) setTimeout(() => URL.revokeObjectURL(u), 1500);
+  for (const p of r._videoURLs?.values() || []) p.then(u => u && setTimeout(() => URL.revokeObjectURL(u), 1500)).catch(() => {});
 }
 
 /** Are all files of this entry stored on the device? */

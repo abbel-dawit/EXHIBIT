@@ -29,6 +29,17 @@ fs.writeFileSync(path.join(OUT, 'version.json'), JSON.stringify({ version, built
 const files = [];
 const walk = (dir) => { for (const f of fs.readdirSync(dir, { withFileTypes: true })) { const p = path.join(dir, f.name); f.isDirectory() ? walk(p) : files.push(path.relative(OUT, p).split(path.sep).join('/')); } };
 for (const d of ['css', 'js', 'brand', 'icons', 'market', 'vendor']) if (fs.existsSync(path.join(OUT, d))) walk(path.join(OUT, d));
-const precache = ['./', 'index.html', 'manifest.webmanifest', ...files.filter(f => !/LICENSE|\.map$/.test(f) && !f.startsWith('js/publish') && !f.startsWith('js/github') && !f.startsWith('js/zip'))];
+// First visit: download only what the collector app needs to open offline. The artist Studio,
+// the AR engine (cached the first time AR is used), install-only icons, full-size marketplace
+// images and encrypted artwork files are fetched on demand instead of all at once.
+const skip = f => /LICENSE|\.map$/.test(f) || /^js\/(publish|github|zip|analyze)/.test(f) || f.startsWith('studio/') || f.startsWith('art/')
+  || (f.startsWith('vendor/') && !f.startsWith('vendor/fonts/')) || /^icons\/(icon-512|icon-maskable-512)/.test(f) || /^market\/[^/]+\.jpg$/.test(f);
+const precache = ['./', 'index.html', 'manifest.webmanifest', ...files.filter(f => !skip(f))];
+// minify stylesheets (comments + whitespace); GitHub Pages also gzips everything
+for (const f of files.filter(f => f.endsWith('.css'))) {
+  const p = path.join(OUT, f);
+  const css = fs.readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ').replace(/\s*([{};,>])\s*/g, '$1').replace(/;}/g, '}').trim();
+  fs.writeFileSync(p, css);
+}
 fs.writeFileSync(path.join(OUT, 'precache.json'), JSON.stringify({ version, files: precache }, null, 1));
 console.log(`built ${version}: ${precache.length} files cached for offline use`);

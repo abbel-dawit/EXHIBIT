@@ -59,7 +59,7 @@ const matches = (l, cat) => cat === 'All' || (cat === 'Living' ? l.living : cat 
 function cardHTML(m, l, esc) {
   const a = artistOf(m, l);
   return `<button class="card market-card" data-listing="${esc(l.id)}">
-    <div class="card-img market-img"><img src="${esc(l.image)}" alt="" loading="lazy" decoding="async">${l.living ? '<span class="card-badge">Living</span>' : ''}${l.soldOut ? '<span class="card-edition sold">Sold out</span>' : ''}</div>
+    <div class="card-img market-img"><img src="${esc(l.thumb || l.image)}" alt="" loading="lazy" decoding="async">${l.living ? '<span class="card-badge">Living</span>' : ''}${l.soldOut ? '<span class="card-edition sold">Sold out</span>' : ''}</div>
     ${heartHTML(`m:${l.id}`, esc)}
     <div class="card-body"><div class="card-title">${esc(l.title)}</div><div class="card-meta">${esc(a.name)}</div>
       <div class="market-price">${esc(fromPrice(l, m.currency || 'ETB'))}</div></div>
@@ -206,7 +206,7 @@ export function openOrder(l, ctx, { fromArtist = null } = {}) {
 export function artistList(m) {
   return Object.entries(m.artists).map(([id, a]) => ({ id, ...a, works: m.listings.filter(l => l.artist === id) })).filter(a => a.works.length);
 }
-const avatarOf = a => a.avatar || a.works[0]?.image || '';
+const avatarOf = a => a.avatar || a.works[0]?.thumb || a.works[0]?.image || '';
 
 /** Round artist avatars (home and marketplace). */
 export async function renderArtistStrip(el, ctx) {
@@ -221,7 +221,7 @@ export async function renderArtistStrip(el, ctx) {
 export async function renderArtists(grid, ctx) {
   const m = await loadMarket(), list = artistList(m), { esc, svgIcon } = ctx;
   grid.innerHTML = list.map(a => `<div class="artist-card" data-open-artist="${esc(a.id)}" role="button" tabindex="0">
-      <div class="artist-collage">${a.works.slice(0, 3).map(w => `<span style="background-image:url('${esc(w.image)}')"></span>`).join('')}</div>
+      <div class="artist-collage">${a.works.slice(0, 3).map(w => `<span style="background-image:url('${esc(w.thumb || w.image)}')"></span>`).join('')}</div>
       <div class="artist-card-body">
         <span class="artist-av" style="background-image:url('${esc(avatarOf(a))}')"></span>
         <div class="artist-card-text"><b>${esc(a.name)}</b><small>${esc([a.city, `${a.works.length} work${a.works.length === 1 ? '' : 's'}`].filter(Boolean).join(' · '))}</small></div>
@@ -231,7 +231,7 @@ export async function renderArtists(grid, ctx) {
   if (!grid.dataset.bound) {
     grid.dataset.bound = '1';
     grid.addEventListener('click', e => {
-      const t = e.target.closest('[data-artist-3d]'); if (t) { e.stopPropagation(); return ctx.openArtist3D(t.dataset.artist3d); }
+      const t = e.target.closest('[data-artist-3d]'); if (t) { e.stopPropagation(); return ctx.openArtist3D(t.getAttribute('data-artist-3d')); }
       const c = e.target.closest('[data-open-artist]'); if (c) openArtist(c.dataset.openArtist, ctx);
     });
   }
@@ -244,7 +244,7 @@ export async function openArtist(id, ctx) {
   const prices = a.works.flatMap(w => (w.sizes || []).map(s => s.price)).filter(x => x != null);
   const liked = () => a.works.filter(w => isFav(`m:${w.id}`)).length;
   const html = `<article class="story artist-page">
-    <div class="artist-cover">${a.works.slice(0, 3).map(w => `<span style="background-image:url('${esc(w.image)}')"></span>`).join('')}
+    <div class="artist-cover">${a.works.slice(0, 3).map((w, i) => `<span style="background-image:url('${esc(i === 0 ? w.image : (w.thumb || w.image))}')"></span>`).join('')}
       <div class="story-top">
         <button class="story-round" data-action="close-sheet" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
         <span class="story-top-title">Artist Gallery</span>

@@ -1388,3 +1388,29 @@ body.auth-open .sheet-wrap { z-index: 98; }
 }
 .nav-actions .account-btn { place-items: stretch !important; }
 .nav-actions .account-btn .ex-avatar { display: grid; place-items: center; width: 100% !important; height: 100% !important; aspect-ratio: 1; border-radius: 50%; }
+/* profile picture: a real <img> pinned to the button edges (works in Safari, Chrome, Firefox) */
+.ex-avatar { position: relative; overflow: hidden; }
+.ex-avatar.has-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+.nav-actions .account-btn { position: relative !important; display: block !important; }
+.nav-actions .account-btn .ex-avatar { position: absolute !important; inset: 2px !important; width: auto !important; height: auto !important; aspect-ratio: auto; display: grid; place-items: center; }
+
+/* ---------- AR overlay switcher (swipe, arrows, dots) ---------- */
+.ar-overlays { position: absolute; z-index: 4; left: 50%; bottom: calc(78px + var(--safe-b)); transform: translate(-50%, 10px); opacity: 0; transition: opacity .35s ease, transform .35s ease;
+  display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 999px; background: rgba(20, 16, 12, .55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); }
+.ar-overlays.on { opacity: 1; transform: translate(-50%, 0); }
+.ar-ov-btn { appearance: none; border: 0; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: rgba(255, 255, 255, .12); }
+.ar-ov-btn:active { background: rgba(255, 255, 255, .25); }
+.ar-ov-btn svg { width: 20px; height: 20px; stroke: #fff; stroke-width: 2.2; }
+.ar-ov-info { display: grid; justify-items: center; gap: 6px; min-width: 130px; padding: 0 4px; }
+.ar-ov-info b { font: 600 14px var(--sans); color: #fff; white-space: nowrap; }
+.ar-ov-info b.swap { animation: ovSwap .35s ease; }
+@keyframes ovSwap { from { opacity: 0; transform: translateY(4px); } }
+.ar-dots { display: flex; gap: 6px; }
+.ar-dots button { appearance: none; border: 0; padding: 0; cursor: pointer; width: 7px; height: 7px; border-radius: 4px; background: rgba(255, 255, 255, .45); transition: width .25s, background .25s; }
+.ar-dots button[aria-selected=true] { width: 20px; background: var(--mustard); }
+.ar-swipehint { position: absolute; z-index: 4; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 10px 18px; border-radius: 999px; font: 600 14px var(--sans); color: #fff; background: rgba(20, 16, 12, .6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); opacity: 0; pointer-events: none; transition: opacity .4s; }
+.ar-swipehint.on { opacity: 1; animation: swipeNudge 1.4s ease-in-out .3s 2; }
+@keyframes swipeNudge { 0%, 100% { transform: translate(-50%, -50%); } 30% { transform: translate(-58%, -50%); } 60% { transform: translate(-42%, -50%); } }
+.ar-caption { bottom: calc(24px + var(--safe-b)); }
+#ar-view:not([hidden]) ~ .toast { top: calc(76px + var(--safe-t)); bottom: auto; }
+.ar-swipehint { white-space: nowrap; }

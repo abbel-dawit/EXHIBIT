@@ -184,7 +184,20 @@ Everyone needs an account. After **Launch App**, the welcome screen offers **Cre
 - Want your own relay? Run an ntfy server and set `window.EXHIBIT_CONFIG = { syncRelay: 'https://your-ntfy' }` before `js/app.js` loads.
 - Code: `js/account.js` (sync engine) and `js/account-ui.js` (welcome screen and account page).
 
-## 14 · Legal
+## 14 · Speed
+
+- The splash waits only for the gallery list and your collection. The AR camera engine downloads and prepares your posters in the background after the app opens (skipped on Data Saver or 2G, where it loads when you tap AR).
+- Cards, avatars and the landing collage use 640px thumbnails from `market/thumbs/`. Full images load only on artwork pages. Add `"thumb"` to new listings in `marketplace.json`.
+- First visit: the service worker starts after the page has loaded and saves only the app itself (not the Studio, AR engine or full-size images). Repeat visits open from the saved copy straight away and refresh in the background. New deploys still switch over automatically.
+- Startup modules are preloaded in parallel, the CSS is minified at build, and the legal pages and QR generator load only when needed.
+
+## 15 · AR overlays
+
+- **Locked to the poster.** In AR the overlay is anchored to the printed poster: it moves, tilts and scales with it as you walk around, and hides when the poster leaves the camera. (The old "fit to screen" mode is gone.) Tracking is tuned to follow movement closely without jitter (`TRACKING` in `js/ar.js`).
+- **Several overlays per artwork.** Collectors swipe left or right in AR (or use the arrows and dots) to switch. The app remembers the last one per artwork. Golden Hour ships with two: **Living light** (the animated effect) and **The making of** (Mieraf's time-lapse video).
+- **Adding overlays:** in the Studio, open an artwork → **AR overlays** → **Add video overlay** (MP4/H.264, roughly the poster's shape, under ~10 MB). Reorder, rename or remove, then **Publish**. Videos are encrypted with the artwork's key, so only owners and NFC previews can play them. People who already own the poster get new overlays automatically the next time they open it.
+
+## 16 · Legal
 
 The footer carries the copyright notice (© 2026 Abbel Dawit) and links to the **Privacy Policy** and **Terms of Use**, which open inside the app (also at `#privacy` and `#terms`). Their text is in `js/legal.js`. It's a plain-language starting point written to match how the app works. Set `LEGAL_CONTACT` there, and have a lawyer review both texts for your country before you sell.
 
