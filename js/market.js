@@ -218,8 +218,13 @@ export async function renderArtistStrip(el, ctx) {
 }
 
 /** All artists (the Artists view). */
-export async function renderArtists(grid, ctx) {
-  const m = await loadMarket(), list = artistList(m), { esc, svgIcon } = ctx;
+export async function renderArtists(grid, ctx, query = '') {
+  const m = await loadMarket(), { esc, svgIcon } = ctx;
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const list = artistList(m).filter(a => {
+    const hay = [a.name, a.city, a.bio, ...a.works.flatMap(w => [w.title, w.medium, w.category])].filter(Boolean).join(' ').toLowerCase();
+    return words.every(w => hay.includes(w));
+  });
   grid.innerHTML = list.map(a => `<div class="artist-card" data-open-artist="${esc(a.id)}" role="button" tabindex="0">
       <div class="artist-collage">${a.works.slice(0, 3).map(w => `<span style="background-image:url('${esc(w.thumb || w.image)}')"></span>`).join('')}</div>
       <div class="artist-card-body">
@@ -227,7 +232,7 @@ export async function renderArtists(grid, ctx) {
         <div class="artist-card-text"><b>${esc(a.name)}</b><small>${esc([a.city, `${a.works.length} work${a.works.length === 1 ? '' : 's'}`].filter(Boolean).join(' · '))}</small></div>
         <button class="btn btn-gold btn-small" data-artist-3d="${esc(a.id)}">${svgIcon('cube')}3D</button>
       </div>
-    </div>`).join('') || '<div class="empty">No artists yet.</div>';
+    </div>`).join('') || (words.length ? `<div class="empty">No artists match “${esc(query)}”.</div>` : '<div class="empty">No artists yet.</div>');
   if (!grid.dataset.bound) {
     grid.dataset.bound = '1';
     grid.addEventListener('click', e => {

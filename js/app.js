@@ -403,7 +403,7 @@ async function openDetail(e) {
         ${overlaysOf(m).length > 1 ? `<button class="chip" data-d="ar">${svgIcon('ar')}${overlaysOf(m).length} AR overlays · swipe in AR</button>` : ''}
       </div>
       <div class="panel" id="cert-panel">
-        <div class="panel-head"><span class="seal">✦</span>Certificate of authenticity${c ? (e.verified ? '<span class="ok">✓ Verified</span>' : '<span class="bad">Not verified</span>') : ''}</div>
+        <div class="panel-head"><span class="seal"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="6"/><path d="M9.5 9l1.8 1.8L14.8 7.3"/><path d="M8.5 14.2L7 21l5-2.6 5 2.6-1.5-6.8"/></svg></span>Certificate of authenticity${c ? (e.verified ? '<span class="ok">✓ Verified</span>' : '<span class="bad">Not verified</span>') : ''}</div>
         ${c ? `<dl class="kv">
           <dt>Artwork</dt><dd>${esc(c.title)}</dd>
           <dt>Artist</dt><dd>${esc(c.author)}</dd>
@@ -830,8 +830,16 @@ async function openArtist3D(id) {
 
 // ================================================================ marketplace
 const marketCtx = () => ({ toast, openSheet, closeSheet, esc, svgIcon, storyHTML, mountStory, openArtist3D });
+let artistQuery = '';
 async function showArtists() {
-  try { await renderArtists($('#artists-grid'), marketCtx()); }
+  const f = $('#artist-search');
+  if (f && !f.dataset.bound) {
+    f.dataset.bound = '1';
+    const inp = $('#artist-q'), run = () => { artistQuery = inp.value.trim(); showArtists(); };
+    f.addEventListener('submit', e => { e.preventDefault(); run(); inp.blur(); });
+    inp.addEventListener('input', () => { clearTimeout(f._t); f._t = setTimeout(run, 160); });
+  }
+  try { await renderArtists($('#artists-grid'), marketCtx(), artistQuery); }
   catch (err) { console.warn(err); $('#artists-grid').innerHTML = '<div class="empty">Artists couldn\'t load. Check your connection.</div>'; }
 }
 async function showMarket() {
@@ -935,6 +943,7 @@ async function openAR(entry) {
     if (openAR.token !== token || view.hidden) { session.stop(); return; }
     arSession = session;
     paintOverlayBar(session.overlay);
+    arVideoLoop();
     setStatus(''); msg.textContent = 'Fit the whole poster in the frame'; scan.classList.add('on');
   } catch (e) {
     console.error(e); off();
@@ -947,6 +956,38 @@ async function openAR(entry) {
     else gate('Something went wrong', `We couldn't start AR (${String(e?.message || e?.name || 'unknown error').slice(0, 120)}). Try again, or restart the app.`);
   }
 }
+// ---------- AR video controls: play/pause, restart, progress bar ----------
+const fmtT = s => { s = Math.max(0, Math.floor(s || 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+let vScrubbing = false, vRaf = 0;
+function arVideoLoop() {
+  cancelAnimationFrame(vRaf);
+  const tick = () => {
+    const view = $('#ar-view'); if (view.hidden) return;
+    const fx = arSession?.media?.(), bar = $('#ar-video');
+    const v = fx?.video;
+    const show = !!(v && $('#ar-caption').classList.contains('on'));
+    if (bar.hidden === show) { bar.hidden = !show; requestAnimationFrame(() => bar.classList.toggle('on', show)); }
+    if (v) {
+      const d = v.duration || 0;
+      if (!vScrubbing && d) { $('#ar-vseek').value = Math.round(v.currentTime / d * 1000); $('#ar-vcur').textContent = fmtT(v.currentTime); }
+      $('#ar-vdur').textContent = fmtT(d);
+      $('#ar-vseek').style.setProperty('--p', `${($('#ar-vseek').value / 10).toFixed(1)}%`);
+      const paused = fx.userPaused; const b = $('#ar-vplay');
+      b.classList.toggle('paused', paused); b.setAttribute('aria-label', paused ? 'Play video' : 'Pause video');
+    }
+    vRaf = requestAnimationFrame(tick);
+  };
+  vRaf = requestAnimationFrame(tick);
+}
+(() => {
+  const seek = $('#ar-vseek');
+  const apply = () => { const fx = arSession?.media?.(); const v = fx?.video; if (!v?.duration) return; const t = seek.value / 1000 * v.duration; fx.seek(t); $('#ar-vcur').textContent = fmtT(t); };
+  seek.addEventListener('pointerdown', () => { vScrubbing = true; });
+  seek.addEventListener('input', apply);
+  const end = () => { if (!vScrubbing) return; vScrubbing = false; apply(); };
+  seek.addEventListener('change', end); seek.addEventListener('pointerup', end); seek.addEventListener('pointercancel', end);
+})();
+
 // ---------- AR overlays: name, dots, arrows and swipe ----------
 function paintOverlayBar(i) {
   const list = arSession?.overlays || []; const bar = $('#ar-overlays');
@@ -968,7 +1009,7 @@ function switchOverlay(dir) {
 }
 (() => {
   const view = $('#ar-view'); let sx = 0, sy = 0, st = 0, tracking = false;
-  view.addEventListener('pointerdown', e => { if (e.target.closest('button, .ar-help, .ar-gate')) return; tracking = true; sx = e.clientX; sy = e.clientY; st = performance.now(); });
+  view.addEventListener('pointerdown', e => { if (e.target.closest('button, input, .ar-help, .ar-gate, .ar-video')) return; tracking = true; sx = e.clientX; sy = e.clientY; st = performance.now(); });
   view.addEventListener('pointerup', e => {
     if (!tracking) return; tracking = false;
     const dx = e.clientX - sx, dy = e.clientY - sy;
@@ -986,6 +1027,7 @@ function closeAR(fromPop = false) {
   $('#ar-mount').innerHTML = ''; view.hidden = true;
   $('#ar-scan').classList.remove('on'); $('#ar-status').classList.remove('on'); $('#ar-caption').classList.remove('on');
   $('#ar-overlays').classList.remove('on'); $('#ar-overlays').hidden = true; $('#ar-swipehint').classList.remove('on');
+  cancelAnimationFrame(vRaf); $('#ar-video').classList.remove('on'); $('#ar-video').hidden = true;
   if ($('#sheet').hidden && $('#ceremony').hidden && !state.room) document.body.classList.remove('locked');
   if (state.view === 'home' && !state.room) state.heroPreview?.resume();
   if ($('#sheet').hidden) state.room?.resume();
@@ -1060,6 +1102,8 @@ document.addEventListener('click', e => {
   if (act === 'backup') openBackup();
   if (act === 'close-sheet') closeSheet();
   if (act === 'close-ar') closeAR();
+  if (act === 'ar-vplay') { const fx = arSession?.media?.(); if (fx) fx.setUserPaused(!fx.userPaused); }
+  if (act === 'ar-vrestart') { const fx = arSession?.media?.(); if (fx) fx.restart(); }
   if (act === 'ar-next') switchOverlay(1);
   if (act === 'ar-prev') switchOverlay(-1);
   if (act === 'ar-help') $('#ar-help').hidden = !$('#ar-help').hidden;

@@ -17,9 +17,17 @@ export function loadMindAR() {
 // MindAR smooths the tracked pose with a One-Euro filter. minCF = steadiness when still,
 // beta = how quickly it catches up when the phone moves. Higher beta keeps the overlay stuck to the
 // poster during movement (very low beta made it drift behind); minCF keeps it calm when still.
-const TRACKING = { filterMinCF: 0.0008, filterBeta: 25, warmupTolerance: 4, missTolerance: 6 };
-const HOLD = 0.35;              // seconds an overlay stays after a brief tracking miss (hides flicker)
-const OPACITY = { effect: 0.96, video: 1 };
+const TRACKING = { filterMinCF: 0.0002, filterBeta: 40, warmupTolerance: 3, missTolerance: 10 };
+const HOLD = 0.6;               // seconds an overlay holds its place after a brief tracking miss (no flicker)
+const OPACITY = { effect: 0.82, video: 0.8 };   // the printed poster shows through a little
+
+// The tracker updates the poster's pose fewer times a second than the screen redraws, with a little
+// jitter. Overlays ride on a "follow" group that glides to the latest pose every frame: real
+// movement is followed almost instantly, sub-millimetre wobble is ignored, so it feels glued on.
+const FOLLOW_FAST = 38;         // catch-up rate (per second) for real movement
+const FOLLOW_STILL = 9;         // catch-up rate when the change is tiny (jitter)
+const JITTER_POS = 0.004;       // ≈ 0.4% of the poster width
+const JITTER_ROT = 0.006;       // radians
 
 /**
  * opts: { mount, art: {meta, imageURL, overlayURL, overlays, videoURL}, targetSrc, overlay: start index,
@@ -36,6 +44,26 @@ export async function startAR({ mount, art, targetSrc, overlay = 0, onFound, onL
   const { renderer, scene, camera } = mindar;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   const anchor = mindar.addAnchor(0);   // 1 unit = the poster's width, centred on the poster
+  const follow = new THREE.Group(); follow.matrixAutoUpdate = false; scene.add(follow);
+  const fPos = new THREE.Vector3(), fQuat = new THREE.Quaternion(), fScale = new THREE.Vector3(1, 1, 1);
+  const tPos = new THREE.Vector3(), tQuat = new THREE.Quaternion(), tScale = new THREE.Vector3();
+  let followInit = false;
+  function updateFollow(dt) {
+    if (!tracking) return;                           // hold the last pose while briefly lost
+    anchor.group.matrix.decompose(tPos, tQuat, tScale);
+    if (!followInit) { fPos.copy(tPos); fQuat.copy(tQuat); fScale.copy(tScale); followInit = true; }
+    else {
+      const size = Math.max(1e-4, tScale.x);           // movement relative to the poster's size on screen
+      const dPos = fPos.distanceTo(tPos) / size, dRot = fQuat.angleTo(tQuat);
+      const moving = Math.min(1, Math.max(dPos / (JITTER_POS * 6), dRot / (JITTER_ROT * 6)));
+      const still = dPos < JITTER_POS && dRot < JITTER_ROT;
+      const rate = still ? FOLLOW_STILL * 0.35 : FOLLOW_STILL + (FOLLOW_FAST - FOLLOW_STILL) * moving;
+      const k = 1 - Math.exp(-rate * dt);
+      fPos.lerp(tPos, k); fQuat.slerp(tQuat, k); fScale.lerp(tScale, k);
+    }
+    follow.matrix.compose(fPos, fQuat, fScale);
+    follow.matrixWorldNeedsUpdate = true;
+  }
 
   const overlays = art.overlays?.length ? art.overlays : [{ kind: 'effect', effect: art.meta.effect, title: 'Living edition' }];
   const fx = new Map();                 // index → effect (built on first use, kept for quick switching)
@@ -51,7 +79,7 @@ export async function startAR({ mount, art, targetSrc, overlay = 0, onFound, onL
       image = image || await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = art.imageURL; });
       const e = await createOverlayEffect(THREE, art, overlays[i], { image });
       e.setOpacity(0); e.group.position.set(0, 0, 0.002 + i * 0.0005);
-      anchor.group.add(e.group);
+      follow.add(e.group);
       return e;
     })();
     fx.set(i, p); fade.set(i, 0);
@@ -71,6 +99,7 @@ export async function startAR({ mount, art, targetSrc, overlay = 0, onFound, onL
     if (reveal) e.reveal(now()); else e.play?.();
   }
   anchor.onTargetFound = () => {
+    if (!tracking && now() - lostAt > HOLD) followInit = false;   // a fresh find snaps into place
     tracking = true;
     const target = ready.has(current) ? current : shown;
     if (!everFound || now() - goneSince > 4) show(target, { reveal: true }); else show(target);
@@ -107,6 +136,7 @@ export async function startAR({ mount, art, targetSrc, overlay = 0, onFound, onL
   let last = now();
   const loop = () => {
     const t = now(), dt = Math.min(0.1, t - last); last = t;
+    updateFollow(dt);
     const visible = tracking || (lostAt > 0 && t - lostAt < HOLD);
     if (!visible && [...fade.values()].every(v => v === 0)) goneSince = t;
     for (const [i, e] of ready) {
@@ -146,6 +176,8 @@ export async function startAR({ mount, art, targetSrc, overlay = 0, onFound, onL
     get overlay() { return current; },
     setOverlay, next: () => setOverlay(current + 1), prev: () => setOverlay(current - 1),
     get mode() { return 'pin'; }, setMode() {},
+    /** The video overlay currently on the poster (for the progress bar), or null. */
+    media() { const e = ready.get(shown); return e?.kind === 'video' ? e : null; },
     stop() {
       if (stopped) return; stopped = true;
       document.removeEventListener('visibilitychange', onVis);

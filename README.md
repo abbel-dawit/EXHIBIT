@@ -198,6 +198,9 @@ Everyone needs an account. After **Launch App**, the welcome screen offers **Cre
 - **Locked to the poster.** In AR the overlay is anchored to the printed poster: it moves, tilts and scales with it as you walk around, and hides when the poster leaves the camera. (The old "fit to screen" mode is gone.) Tracking is tuned to follow movement closely without jitter (`TRACKING` in `js/ar.js`).
 - **Several overlays per artwork.** Collectors swipe left or right in AR (or use the arrows and dots) to switch. The app remembers the last one per artwork. Golden Hour ships with two: **Living light** (the animated effect) and **The making of** (Mieraf's time-lapse video).
 - **Adding overlays:** in the Studio, open an artwork → **AR overlays** → **Add video overlay** (MP4/H.264, roughly the poster's shape, under ~10 MB). Reorder, rename or remove, then **Publish**. Videos are encrypted with the artwork's key, so only owners and NFC previews can play them. People who already own the poster get new overlays automatically the next time they open it.
+- **Video controls.** On a video overlay a bar appears above the overlay switcher: play/pause, restart, and a draggable progress bar with elapsed and total time. Dragging the bar never swipes to the next overlay.
+- **Smooth anchoring.** Overlays ride on a "follow" layer that glides toward the tracked pose every frame, ignores tiny jitter, holds its place through brief tracking drops (0.6 s), and snaps straight to the poster when it's found again. Tune `FOLLOW_FAST`, `FOLLOW_STILL`, `HOLD` and `TRACKING` in `js/ar.js`: higher follow values feel tighter, lower ones feel smoother.
+- **See-through.** Effects show at 82% opacity and videos at 80%, so the printed poster shows faintly behind them (`OPACITY` in `js/ar.js`).
 
 ## 16 · Legal
 

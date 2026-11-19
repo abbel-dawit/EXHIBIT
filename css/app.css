@@ -1429,3 +1429,34 @@ body.auth-open .sheet-wrap { z-index: 98; }
 #landing .splash-foot { animation: fadeUp .5s ease .25s both !important; }
 @media (prefers-reduced-motion: reduce) { .sp-card, .sp-clip, .sp-sub, .sp-arrow, #landing .splash-foot { animation: none !important; } .sp-card img { transition: none; } }
 .ar-overlays.loading .ar-ov-info b::after { content: ""; display: inline-block; width: 11px; height: 11px; margin-left: 8px; vertical-align: -1px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .3); border-top-color: var(--mustard); animation: spin .8s linear infinite; }
+
+/* ---------- AR video controls ---------- */
+.ar-video { position: absolute; z-index: 4; left: 50%; bottom: calc(136px + var(--safe-b)); width: min(420px, calc(100vw - 28px)); transform: translate(-50%, 10px); opacity: 0; transition: opacity .3s ease, transform .3s ease;
+  display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 999px; background: rgba(20, 16, 12, .55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); }
+.ar-video.on { opacity: 1; transform: translate(-50%, 0); }
+.ar-vbtn { appearance: none; border: 0; cursor: pointer; flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .14); }
+.ar-vbtn svg { width: 18px; height: 18px; stroke: #fff; stroke-width: 2.3; }
+.ar-vbtn .i-play { display: none; fill: #fff; } .ar-vbtn.paused .i-play { display: block; } .ar-vbtn.paused .i-pause { display: none; }
+.ar-vbtn[data-action="ar-vplay"] { background: var(--mustard); } .ar-vbtn[data-action="ar-vplay"] svg { stroke: #1b1916; } .ar-vbtn[data-action="ar-vplay"] .i-play { fill: #1b1916; }
+.ar-vtime { flex: none; font: 600 12px var(--sans); color: rgba(255, 255, 255, .9); font-variant-numeric: tabular-nums; min-width: 32px; text-align: center; }
+.ar-vseek { --p: 0%; flex: 1; min-width: 0; height: 28px; margin: 0; appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer; touch-action: none; }
+.ar-vseek::-webkit-slider-runnable-track { height: 5px; border-radius: 3px; background: linear-gradient(90deg, var(--mustard) var(--p), rgba(255, 255, 255, .3) var(--p)); }
+.ar-vseek::-moz-range-track { height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .3); }
+.ar-vseek::-moz-range-progress { height: 5px; border-radius: 3px; background: var(--mustard); }
+.ar-vseek::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -6.5px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+.ar-vseek::-moz-range-thumb { width: 18px; height: 18px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+
+/* larger, centred panel seals (certificate, devices) */
+.panel-head .seal { width: 40px; height: 40px; padding: 0; line-height: 0; display: grid; place-items: center; }
+.panel-head .seal svg { width: 22px; height: 22px; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* artist search */
+.search-bar { display: flex; align-items: center; gap: 10px; margin: 0 0 18px; }
+.search-bar input { flex: 1; min-width: 0; height: 52px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--raised, rgb(var(--tint) / .06)); box-shadow: inset 0 0 0 1px var(--line); color: var(--cream); font: 500 16px var(--sans); -webkit-appearance: none; appearance: none; }
+.search-bar input::placeholder { color: var(--cream-3); }
+.search-bar input:focus { outline: none; box-shadow: inset 0 0 0 2px var(--mustard); }
+.search-bar input::-webkit-search-cancel-button { cursor: pointer; }
+.search-go { flex: none; width: 52px; height: 52px; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--mustard); color: var(--mustard-ink); cursor: pointer; box-shadow: 0 6px 18px -8px rgba(229,169,26,.7); transition: transform .15s; }
+.search-go:active { transform: scale(.94); }
+.search-go svg { width: 22px; height: 22px; fill: none; stroke: #111; stroke-width: 2.4; stroke-linecap: round; }
+.panel-head .ok, .panel-head .bad { white-space: nowrap; flex: none; }

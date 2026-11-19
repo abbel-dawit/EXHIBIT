@@ -55,16 +55,21 @@ export function createVideoPoster(THREE, video, aspect) {
   video.addEventListener('loadedmetadata', fit);
   fit();
 
-  let revealStart = null, opacity = 1, wantPlay = false;
+  let revealStart = null, opacity = 1, wantPlay = false, userPaused = false;
   // If the browser blocks playback (no recent tap), try again on the next touch anywhere.
-  const retry = () => { if (wantPlay && video.paused) video.play().catch(() => {}); };
+  const retry = () => { if (wantPlay && !userPaused && video.paused) video.play().catch(() => {}); };
   addEventListener('pointerdown', retry, true); addEventListener('touchend', retry, true);
-  const play = () => { wantPlay = true; const p = video.play(); if (p && p.catch) p.catch(() => {}); };
+  const play = () => { wantPlay = true; if (userPaused) return; const p = video.play(); if (p && p.catch) p.catch(() => {}); };
   return {
     group,
     reveal(t) { revealStart = t; play(); },
     play, pause() { wantPlay = false; video.pause(); },
     video,
+    /** Viewer controls (progress bar): pause/resume and seek, respected by AR's automatic play. */
+    get userPaused() { return userPaused; },
+    setUserPaused(p) { userPaused = !!p; if (userPaused) video.pause(); else if (wantPlay) video.play().catch(() => {}); },
+    seek(sec) { try { video.currentTime = Math.max(0, Math.min(sec, (video.duration || sec) - 0.05)); } catch {} },
+    restart() { this.seek(0); this.setUserPaused(false); },
     setViewportHeight() {},
     setOpacity(o) { opacity = o; },
     update(t) {

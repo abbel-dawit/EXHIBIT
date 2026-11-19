@@ -171,7 +171,7 @@ export function openAccount({ showLink = false } = {}) {
     </div>
 
     <div class="panel">
-      <div class="panel-head"><span class="seal">◎</span>Your devices</div>
+      <div class="panel-head"><span class="seal"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="13" height="10" rx="1.5"/><path d="M1 18.5h13"/><rect x="16.5" y="8" width="6" height="12" rx="1.5"/><path d="M19 17.5h1"/></svg></span>Your devices</div>
       <ul class="acct-devices">${devices.map(d => `<li><div><b>${H.esc(d.name)}</b><small>${d.me ? 'This device' : `Active ${ago(d.lastSeen)}`}</small></div>${d.me ? '<span class="mini-badge ok">This device</span>' : `<button class="link-btn" data-acct-remove="${H.esc(d.id)}">Remove</button>`}</li>`).join('')}</ul>
     </div>
 
