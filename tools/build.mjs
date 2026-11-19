@@ -35,6 +35,21 @@ for (const d of ['css', 'js', 'brand', 'icons', 'market', 'vendor']) if (fs.exis
 const skip = f => /LICENSE|\.map$/.test(f) || /^js\/(publish|github|zip|analyze)/.test(f) || f.startsWith('studio/') || f.startsWith('art/')
   || (f.startsWith('vendor/') && !f.startsWith('vendor/fonts/')) || /^icons\/(icon-512|icon-maskable-512)/.test(f) || /^market\/[^/]+\.jpg$/.test(f);
 const precache = ['./', 'index.html', 'manifest.webmanifest', ...files.filter(f => !skip(f))];
+// AR libraries: point the import map at the bundled /vendor copies when the vendor step ran
+if (fs.existsSync(path.join(OUT, 'vendor/three/three.module.js'))) {
+  for (const [f, base] of [['index.html', './vendor/'], ['studio/index.html', '../vendor/']]) {
+    const p = path.join(OUT, f); if (!fs.existsSync(p)) continue;
+    const local = { three: base + 'three/three.module.js', addons: base + 'three/addons/', mindar: base + 'mind-ar/mindar-image-three.prod.js', compiler: base + 'mind-ar/mindar-image.prod.js' };
+    let h = fs.readFileSync(p, 'utf8');
+    h = h.replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/three@0\.160\.0\/build\/three\.module\.js/g, local.three)
+         .replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/three@0\.160\.0\/examples\/jsm\//g, local.addons)
+         .replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/mind-ar@1\.2\.5\/dist\/mindar-image-three\.prod\.js/g, local.mindar)
+         .replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/mind-ar@1\.2\.5\/dist\/mindar-image\.prod\.js/g, local.compiler)
+         .replace('window.EXHIBIT_VENDOR = { local: false,', 'window.EXHIBIT_VENDOR = { local: true,');
+    fs.writeFileSync(p, h);
+  }
+  console.log('import map → bundled vendor');
+} else console.log('import map → jsDelivr (no vendor folder)');
 // minify stylesheets (comments + whitespace); GitHub Pages also gzips everything
 for (const f of files.filter(f => f.endsWith('.css'))) {
   const p = path.join(OUT, f);

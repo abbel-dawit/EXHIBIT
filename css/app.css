@@ -1414,3 +1414,18 @@ body.auth-open .sheet-wrap { z-index: 98; }
 .ar-caption { bottom: calc(24px + var(--safe-b)); }
 #ar-view:not([hidden]) ~ .toast { top: calc(76px + var(--safe-t)); bottom: auto; }
 .ar-swipehint { white-space: nowrap; }
+
+/* ---------- landing: instant blurred previews, sharp image fades in, quicker intro ---------- */
+.sp-card { overflow: hidden; background-size: cover; background-position: center; animation-duration: .6s !important; }
+.sp-card picture, .sp-card img { display: block; width: 100%; height: 100%; }
+.sp-card img { object-fit: cover; opacity: 0; transition: opacity .35s ease; }
+.sp-card img.in { opacity: 1; }
+.sp-main { animation-delay: .05s !important; }
+.sp-second { animation-delay: .12s !important; }
+.sp-peek { animation-delay: .2s !important; }
+.sp-clip { animation: clipIn .7s cubic-bezier(.2, .8, .2, 1) both, clipPan 10s ease-in-out .7s infinite alternate !important; }
+.sp-sub { animation: fadeUp .5s ease .15s both !important; }
+.sp-arrow { animation: fadeUp .5s ease .3s both !important; }
+#landing .splash-foot { animation: fadeUp .5s ease .25s both !important; }
+@media (prefers-reduced-motion: reduce) { .sp-card, .sp-clip, .sp-sub, .sp-arrow, #landing .splash-foot { animation: none !important; } .sp-card img { transition: none; } }
+.ar-overlays.loading .ar-ov-info b::after { content: ""; display: inline-block; width: 11px; height: 11px; margin-left: 8px; vertical-align: -1px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .3); border-top-color: var(--mustard); animation: spin .8s linear infinite; }

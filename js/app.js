@@ -156,6 +156,22 @@ async function runSplash({ landing = true } = {}) {
   setTimeout(() => { stopEmbers(); boot.remove(); }, 1000);
 }
 
+// ================================================================ AR warm-up
+/** Get one poster ready for AR right away (engine, recognition data, overlay videos). */
+function warmOne(entry) {
+  if (!entry?.K || warmOne.done?.has(entry.key)) return;
+  (warmOne.done ||= new Set()).add(entry.key);
+  (async () => {
+    try {
+      const engine = loadAR().then(m => m.loadMindAR()); engine.catch(() => {});
+      await syncEntry(entry);
+      const art = await openArtwork(entry);
+      for (const o of art.overlays || []) if (o.kind === 'video') art.videoURL(o.file, o.mime).catch(() => {});
+      await getTarget(targetKeyOf(entry), art);
+      await engine;
+    } catch (err) { warmOne.done.delete(entry.key); console.warn('warm', err); }
+  })();
+}
 // ================================================================ background AR warm-up
 // After the app is visible and idle, quietly fetch the AR engine and prepare camera tracking for
 // collected posters, so "Start AR" opens instantly (and works offline later). Skipped on Data
@@ -168,11 +184,12 @@ function warmAR() {
     try {
       await loadAR().then(m => m.loadMindAR());
       for (const e of state.collection) {
+        if (warmOne.done?.has(e.key)) continue;
         try { const art = await openArtwork(e); await getTarget(targetKeyOf(e), art); } catch (err) { console.warn('warm', err); }
         await new Promise(r => idle(r));
       }
     } catch (err) { console.warn('AR warm-up skipped', err); }
-  }, { timeout: 4000 }), 2500);
+  }, { timeout: 2000 }), 800);
 }
 
 // ================================================================ rendering
@@ -422,6 +439,7 @@ async function openDetail(e) {
         getTarget(targetKeyOf(e), art).catch(() => {});      // warm up AR
       } catch (err) { console.warn(err); }
     })();
+    warmOne(e);
     isOffline(e).then(ok => { const l = $('#offline-line', body); if (l) l.textContent = ok ? '✓ Saved on this device: works offline.' : 'Some files will download the first time you open AR.'; });
     body.addEventListener('click', ev => {
       const b = ev.target.closest('[data-d]'); if (!b) return;
@@ -594,8 +612,8 @@ async function runUnlock(input) {
     const { entry, already } = await unlock(input, (label, p) => { ring.style.setProperty('--p', Math.round(p)); step.textContent = label; });
     ring.style.setProperty('--p', 100);
     requestPersistence();
+    warmOne(entry);   // "View in AR" is the next tap for most people
     if (!already) acct.changed();
-    await syncEntry(entry);   // pick up overlays the artist added after this poster was unlocked
     const art = await openArtwork(entry);
     await thumbURL(entry);
     await sleep(350);
@@ -646,6 +664,7 @@ async function runPreview(input) {
     const art = await openArtwork(entry);
     state.preview = { entry, art, expires: Date.now() + PREVIEW_MS, hiddenAt: 0 };
     state.preview.timer = setInterval(tickPreview, 1000);
+    warmOne(entry);
     closeCeremony();
     showPreviewPill();
     openPreviewSheet();
@@ -894,8 +913,11 @@ async function openAR(entry) {
     const key = targetKeyOf(entry);
     setStatus(isReady(key) ? 'Starting camera…' : 'Preparing recognition…');
     off = onProgress(key, p => { if (p < 100 && openAR.token === token) setStatus(`Preparing recognition… ${Math.round(p)}%`); });
+    const engine = loadAR().then(async mod => { await mod.loadMindAR(); return mod; });   // download the AR engine right away
+    engine.catch(() => {});
+    await syncEntry(entry);   // pick up overlays the artist added after this poster was unlocked
     const art = await openArtwork(entry);
-    const [targetSrc, ar] = await Promise.all([getTarget(key, art), loadAR()]);
+    const [targetSrc, ar] = await Promise.all([getTarget(key, art), engine]);
     off();
     if (openAR.token !== token || view.hidden) return;
     setStatus('Starting camera…');
@@ -907,6 +929,7 @@ async function openAR(entry) {
       onFound: () => { scan.classList.remove('on'); cap.classList.add('on'); showOverlayBar(true); },
       onLost: () => { msg.textContent = 'Find the poster again'; scan.classList.add('on'); cap.classList.remove('on'); },
       onOverlay: (i, ov) => { paintOverlayBar(i); try { localStorage.setItem(ovKey, ov.id); } catch {} },
+      onOverlayLoading: (i, on) => { $('#ar-overlays').classList.toggle('loading', on); },
       onOverlayError: () => toast('That overlay couldn\'t load. Check your connection and try again.'),
     });
     if (openAR.token !== token || view.hidden) { session.stop(); return; }

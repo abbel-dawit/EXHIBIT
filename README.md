@@ -189,7 +189,9 @@ Everyone needs an account. After **Launch App**, the welcome screen offers **Cre
 - The splash waits only for the gallery list and your collection. The AR camera engine downloads and prepares your posters in the background after the app opens (skipped on Data Saver or 2G, where it loads when you tap AR).
 - Cards, avatars and the landing collage use 640px thumbnails from `market/thumbs/`. Full images load only on artwork pages. Add `"thumb"` to new listings in `marketplace.json`.
 - First visit: the service worker starts after the page has loaded and saves only the app itself (not the Studio, AR engine or full-size images). Repeat visits open from the saved copy straight away and refresh in the background. New deploys still switch over automatically.
-- Startup modules are preloaded in parallel, the CSS is minified at build, and the legal pages and QR generator load only when needed.
+- The landing page needs no code to appear. Its artwork uses right-sized WebP images (with JPEG fallback) from `market/landing/`, and tiny blurred previews built into the page show instantly, then sharpen. Images from the hidden home screen wait until they're shown.
+- No network check blocks the page: the AR libraries' import map defaults to jsDelivr, and the GitHub Actions build points it at the bundled `vendor/` copies.
+- The CSS is minified at build, and the legal pages and QR generator load only when needed.
 
 ## 15 · AR overlays
 

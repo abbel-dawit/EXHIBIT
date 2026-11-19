@@ -23,10 +23,10 @@ const OPACITY = { effect: 0.96, video: 1 };
 
 /**
  * opts: { mount, art: {meta, imageURL, overlayURL, overlays, videoURL}, targetSrc, overlay: start index,
- *         onFound, onLost, onOverlay(index, overlay), onOverlayError(index, error) }
+ *         onFound, onLost, onOverlay(index, overlay), onOverlayLoading(index, loading), onOverlayError(index, error) }
  * Returns { stop(), next(), prev(), setOverlay(i), overlay, overlays }
  */
-export async function startAR({ mount, art, targetSrc, overlay = 0, onFound, onLost, onOverlay, onOverlayError }) {
+export async function startAR({ mount, art, targetSrc, overlay = 0, onFound, onLost, onOverlay, onOverlayLoading, onOverlayError }) {
   const MindARThree = await loadMindAR();
   const container = document.createElement('div');
   container.className = 'ar-stage';
@@ -41,6 +41,9 @@ export async function startAR({ mount, art, targetSrc, overlay = 0, onFound, onL
   const fx = new Map();                 // index → effect (built on first use, kept for quick switching)
   const fade = new Map();               // index → 0..1
   let current = Math.max(0, Math.min(overlays.length - 1, overlay | 0));
+  let shown = current;                  // what's on the poster now (stays until the next one is ready)
+  // start downloading/decrypting every video overlay now, while the camera starts
+  for (const o of overlays) if (o.kind === 'video') art.videoURL?.(o.file, o.mime)?.catch?.(() => {});
   let image = null;
   const build = async i => {
     if (fx.has(i)) return fx.get(i);
@@ -60,23 +63,26 @@ export async function startAR({ mount, art, targetSrc, overlay = 0, onFound, onL
   const now = () => performance.now() / 1000;
   let tracking = false, lostAt = -1, everFound = false, goneSince = now();
 
-  try { await ensure(current); } catch (e) { container.remove(); throw e; }
+  const firstFx = ensure(current);       // build the first overlay while the camera starts
 
   function show(i, { reveal = false } = {}) {
     const e = ready.get(i); if (!e) return;
+    shown = i;
     if (reveal) e.reveal(now()); else e.play?.();
   }
   anchor.onTargetFound = () => {
     tracking = true;
-    if (!everFound || now() - goneSince > 4) show(current, { reveal: true }); else show(current);
+    const target = ready.has(current) ? current : shown;
+    if (!everFound || now() - goneSince > 4) show(target, { reveal: true }); else show(target);
     everFound = true;
     try { navigator.vibrate?.(18); } catch {}
     onFound?.();
   };
   anchor.onTargetLost = () => { tracking = false; lostAt = now(); onLost?.(); };
 
-  try { await mindar.start(); }
+  try { await Promise.all([mindar.start(), firstFx]); }
   catch (e) { cleanup(); throw e; }
+  if (tracking && ready.has(current)) show(current, { reveal: true });   // poster was found while the overlay was still preparing
 
   let switchId = 0;
   async function setOverlay(i) {
@@ -84,11 +90,15 @@ export async function startAR({ mount, art, targetSrc, overlay = 0, onFound, onL
     if (i === current) return current;
     const id = ++switchId;
     current = i; onOverlay?.(i, overlays[i]);
+    const loading = !ready.has(i); if (loading) onOverlayLoading?.(i, true);
     try {
       const e = await ensure(i);
+      if (loading) onOverlayLoading?.(i, false);
       if (id !== switchId) return current;
+      shown = i;
       if (tracking) e.reveal(now());
     } catch (err) {
+      if (loading) onOverlayLoading?.(i, false);
       console.warn('overlay', err); onOverlayError?.(i, err);
     }
     return current;
@@ -100,7 +110,7 @@ export async function startAR({ mount, art, targetSrc, overlay = 0, onFound, onL
     const visible = tracking || (lostAt > 0 && t - lostAt < HOLD);
     if (!visible && [...fade.values()].every(v => v === 0)) goneSince = t;
     for (const [i, e] of ready) {
-      const want = visible && i === current ? 1 : 0;
+      const want = visible && i === shown ? 1 : 0;
       let f = fade.get(i) || 0;
       f += (want - f) * (1 - Math.pow(want ? 0.004 : 0.0008, dt));   // quick in, quicker out
       if (f < 0.01 && !want) { f = 0; if (!e.group.visible) {} e.pause?.(); }
@@ -118,11 +128,11 @@ export async function startAR({ mount, art, targetSrc, overlay = 0, onFound, onL
   const onVis = () => {
     renderer.setAnimationLoop(document.hidden ? null : loop);
     if (document.hidden) for (const e of ready.values()) e.pause?.();
-    else if (tracking) ready.get(current)?.play?.();
+    else if (tracking) ready.get(shown)?.play?.();
   };
   document.addEventListener('visibilitychange', onVis);
   // warm the next overlay in the background so the first swipe is instant
-  if (overlays.length > 1) setTimeout(() => { if (!stopped) ensure((current + 1) % overlays.length).catch(() => {}); }, 1500);
+  if (overlays.length > 1) setTimeout(() => { if (!stopped) for (let k = 0; k < overlays.length; k++) if (k !== current) ensure(k).catch(() => {}); }, 600);
 
   let stopped = false;
   function cleanup() {

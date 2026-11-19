@@ -11,6 +11,16 @@
 <meta name="apple-mobile-web-app-title" content="EXHIBIT">
 <meta name="description" content="EXHIBIT: a private gallery of living art. Unlock the animated edition of your poster with its QR code.">
 <title>EXHIBIT</title>
+<script>
+/* AR libraries: jsDelivr by default (pinned versions). The GitHub Actions build switches this to the
+   bundled /vendor copies (see tools/build.mjs) without any request at page load. */
+window.EXHIBIT_VENDOR = { local: false,
+  three: 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js',
+  addons: 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/',
+  mindar: 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js',
+  compiler: 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js' };
+</script>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/", "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js" } }</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="icons/favicon-48.png" sizes="48x48" type="image/png">
@@ -19,36 +29,11 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/app.css">
-<link rel="preload" as="image" href="brand/sky.jpg">
-<link rel="preload" as="image" href="market/thumbs/golden-hour.jpg">
+<link rel="preload" as="image" href="brand/sky.webp" type="image/webp" fetchpriority="high">
+<link rel="preload" as="image" href="market/landing/golden-hour.webp" type="image/webp" fetchpriority="high">
+<link rel="preload" as="image" href="market/landing/flowers.webp" type="image/webp">
 <link rel="preconnect" href="https://ntfy.sh" crossorigin>
-<link rel="modulepreload" href="js/app.js">
-<link rel="modulepreload" href="js/db.js">
-<link rel="modulepreload" href="js/gallery.js">
-<link rel="modulepreload" href="js/crypto.js">
-<link rel="modulepreload" href="js/backup.js">
-<link rel="modulepreload" href="js/recognition.js">
-<link rel="modulepreload" href="js/facts.js">
-<link rel="modulepreload" href="js/theme.js">
-<link rel="modulepreload" href="js/contact.js">
-<link rel="modulepreload" href="js/market.js">
-<link rel="modulepreload" href="js/story.js">
-<link rel="modulepreload" href="js/account.js">
-<link rel="modulepreload" href="js/account-ui.js">
-<script>
-/* Libraries (three.js 3D engine + MindAR camera tracking) are bundled into /vendor by the deploy step.
-   If this copy of the site was published without that step, use the same pinned versions from jsDelivr instead. */
-(function(){
-  var base = '%s', cdn = 'https://cdn.jsdelivr.net/npm/', local = true;
-  try { var x = new XMLHttpRequest(); x.open('HEAD', base + 'three/three.module.js', false); x.send(); local = x.status >= 200 && x.status < 300; } catch (e) { local = true; }
-  var V = local
-    ? { three: base + 'three/three.module.js', addons: base + 'three/addons/', mindar: base + 'mind-ar/mindar-image-three.prod.js', compiler: base + 'mind-ar/mindar-image.prod.js' }
-    : { three: cdn + 'three@0.160.0/build/three.module.js', addons: cdn + 'three@0.160.0/examples/jsm/', mindar: cdn + 'mind-ar@1.2.5/dist/mindar-image-three.prod.js', compiler: cdn + 'mind-ar@1.2.5/dist/mindar-image.prod.js' };
-  V.local = local; window.EXHIBIT_VENDOR = V;
-  if (!local) console.warn('EXHIBIT: /vendor is missing on this site, loading three.js and MindAR from jsDelivr. Deploy with GitHub Actions to bundle them.');
-  document.write('<script type="importmap">' + JSON.stringify({ imports: { 'three': V.three, 'three/addons/': V.addons, 'mindar-image-three': V.mindar } }) + '<\/script>');
-})();
-</script>
+
 </head>
 <body>
 
@@ -56,14 +41,14 @@
 <div id="landing">
   <canvas id="splash-embers" aria-hidden="true" hidden></canvas>
   <div class="sp-head">
-    <h1 class="splash-title" id="splash-title"><span class="sp-clip" style="background-image:url(brand/sky.jpg)">EXHIBIT</span></h1>
+    <h1 class="splash-title" id="splash-title"><span class="sp-clip" style="background-image:url(brand/sky.jpg);background-image:image-set(url(brand/sky.webp) type('image/webp'),url(brand/sky.jpg) type('image/jpeg'))">EXHIBIT</span></h1>
     <div class="sp-sub"><span>Living Art World</span><i class="sp-line"></i></div>
   </div>
   <div class="sp-collage" aria-hidden="true">
-    <div class="sp-card sp-peek l" style="background-image:url(market/thumbs/mountain-pass.jpg)"></div>
-    <div class="sp-card sp-main" style="background-image:url(market/thumbs/golden-hour.jpg)"></div>
-    <div class="sp-card sp-second" style="background-image:url(market/thumbs/flowers.jpg)"></div>
-    <div class="sp-card sp-peek r" style="background-image:url(market/thumbs/color-study.jpg)"></div>
+    <div class="sp-card sp-peek l" style="background-image:url(data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAjABADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDYMfNJ5RzxTluo8FmU59OtSwyxSj7uCTxRzE8pmHO8bTjtipEZYpCSwUdeT0rnjeXVwUQzKv8AtD+L61PmIKGmYM3QsXJxWTqJGypMwi7K3ynFOjlkMuCx7GiilY1P/9k=)"><picture><source type="image/webp" srcset="market/landing/mountain-pass.webp"><img src="market/landing/mountain-pass.jpg" alt="" decoding="async" fetchpriority="low" onload="this.classList.add('in')"></picture></div>
+    <div class="sp-card sp-main" style="background-image:url(data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAALABADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDo9jNFIYFSSQKSqk4BP1pbe9iMEEdyIkunTc0YP3cdRXNrqF3EW8uZkzHzgAVlTSNIYS5yXJLe9c502vuf/9k=)"><picture><source type="image/webp" srcset="market/landing/golden-hour.webp"><img src="market/landing/golden-hour.jpg" alt="" decoding="async" fetchpriority="high" onload="this.classList.add('in')"></picture></div>
+    <div class="sp-card sp-second" style="background-image:url(data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAMABADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDkrO0adtiJvd+hB+6KV41jDIUDMRjJ/hx6VNY3ksJDRERnAUlRgn/69RSyNJ5hY8hMfrWN3c15fduf/9k=)"><picture><source type="image/webp" srcset="market/landing/flowers.webp"><img src="market/landing/flowers.jpg" alt="" decoding="async" fetchpriority="high" onload="this.classList.add('in')"></picture></div>
+    <div class="sp-card sp-peek r" style="background-image:url(data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAjABADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDLkQMhHeqyIwlA+ZWB47EV1F1YJDa7okACn5j3pJYTfWMdw6jzY38vf/eXtn6VbqxlqiEmlcuyuWtXBGQzYOfSs++uXWxjgBwnmDp261V/tK4eQqjAIx+6RxV24smurSVU/wBYo3KPUiuOlFw3G6inXXJsVLSCL7UPkHAzWovyanEq8LtziiilBto9GrGKxOi6f5n/2Q==)"><picture><source type="image/webp" srcset="market/landing/color-study.webp"><img src="market/landing/color-study.jpg" alt="" decoding="async" fetchpriority="low" onload="this.classList.add('in')"></picture></div>
     <i class="sp-arrow a1"></i><i class="sp-arrow a2"></i>
   </div>
   <div class="splash-foot">
@@ -127,7 +112,7 @@
       <div class="section-head row"><h2 class="h-sm">Featured</h2><button class="link-btn" data-action="unlock">Unlock</button></div>
       <div class="hero-stage">
         <div class="hero-frame" id="hero-frame">
-          <img id="hero-img" src="brand/hero.jpg" alt="">
+          <img id="hero-img" src="brand/hero.jpg" alt="" loading="lazy" decoding="async">
           <canvas id="hero-embers" aria-hidden="true"></canvas>
           <div class="hero-lock" id="hero-lock"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Living edition locked</span></div>
           <div class="hero-caption" id="hero-caption"><span>Golden Hour</span><span class="muted">Unlock with your poster's QR</span></div>
